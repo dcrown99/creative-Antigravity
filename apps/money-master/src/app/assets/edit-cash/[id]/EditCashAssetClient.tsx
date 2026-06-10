@@ -28,7 +28,6 @@ export default function EditCashAssetClient({ params }: { params: Promise<{ id: 
     useEffect(() => {
         // まだassetが未設定で、かつfoundAssetが見つかった場合のみ反映する（初回ロード遅延対応）
         if (foundAsset && !asset) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setAsset(foundAsset);
             setName(foundAsset.name);
             setType((foundAsset.type as 'bank' | 'cash' | 'other') || 'bank');

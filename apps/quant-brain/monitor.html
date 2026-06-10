@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Antigravity God Mode: Neural Monitor</title>
+    <style>
+        body {
+            background: #0d1117;
+            color: #00f0ff;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: #161b22;
+            padding: 20px;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+        }
+
+        h1 {
+            border-bottom: 2px solid #238636;
+            padding-bottom: 10px;
+        }
+
+        #price {
+            font-size: 3em;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #238636;
+            color: white;
+        }
+
+        .status-waiting {
+            background: #8b949e;
+            color: white;
+        }
+
+        .log {
+            height: 300px;
+            overflow-y: scroll;
+            border-top: 1px solid #30363d;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .bar-container {
+            width: 100%;
+            background: #333;
+            height: 30px;
+            margin-top: 10px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            width: 50%;
+            background: #238636;
+            transition: width 0.5s;
+            text-align: center;
+            color: white;
+            line-height: 30px;
+        }
+
+        .strategy-info {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .buy {
+            color: #2ea043;
+        }
+
+        .sell {
+            color: #da3633;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧠 Neural Alpha Monitor (Live)</h1>
+    <div class="grid">
+        <div class="card">
+            <h3>BTC/USDT Price</h3>
+            <div id="price">Waiting...</div>
+            <div id="ts" style="color: #8b949e">--:--:--</div>
+        </div>
+        <div class="card">
+            <h3>📈 Daily Momentum Strategy</h3>
+            <div id="momentum-status">
+                <span class="status-badge status-waiting">Loading...</span>
+            </div>
+            <div class="strategy-info">
+                <div id="momentum-params">RSI(14) > 50 + SMA(200)</div>
+                <div id="momentum-position">Position: Checking...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid" style="margin-top: 20px;">
+        <div class="card">
+            <h3>💰 Funding Rate Strategy</h3>
+            <div id="funding-rates">Loading...</div>
+        </div>
+        <div class="card">
+            <h3>⛓️ On-Chain Status</h3>
+            <div id="onchain-status">Loading...</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <h3>Brain Event Log</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws://127.0.0.1:8002/ws/monitor");
+        const logDiv = document.getElementById("log");
+
+        ws.onopen = () => {
+            log("✅ Connected to Neural Brain");
+            // Fetch initial status
+            fetchStatus();
+        };
+        ws.onclose = () => log("❌ Disconnected");
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            const data = msg.data;
+
+            if (msg.type === "market_price") {
+                document.getElementById("price").innerText = `$${data.price.toLocaleString()}`;
+                document.getElementById("ts").innerText = new Date(data.ts).toLocaleTimeString();
+            }
+            else if (msg.type === "order_filled") {
+                log(`🚀 ORDER FILLED: ${data.side} ${data.qty} BTC`);
+            }
+            else if (msg.type === "daily_momentum_entry") {
+                log(`📈 MOMENTUM ENTRY: ${data.symbol} @ $${data.price.toLocaleString()}`);
+                fetchStatus();
+            }
+            else if (msg.type === "daily_momentum_exit") {
+                log(`📉 MOMENTUM EXIT: ${data.symbol} @ $${data.price.toLocaleString()}`);
+                fetchStatus();
+            }
+            else if (msg.type === "funding_signal") {
+                log(`💰 HIGH FR: ${data.symbol} @ ${data.annualized_pct.toFixed(2)}%`);
+            }
+        };
+
+        async function fetchStatus() {
+            try {
+                // Momentum Status
+                const momentumResp = await fetch("http://localhost:8002/momentum");
+                const momentum = await momentumResp.json();
+                
+                const statusBadge = document.getElementById("momentum-status");
+                const posOpen = momentum.position_open;
+                statusBadge.innerHTML = posOpen 
+                    ? '<span class="status-badge status-active">LONG POSITION</span>'
+                    : '<span class="status-badge status-waiting">WATCHING</span>';
+                
+                document.getElementById("momentum-params").innerText = 
+                    `RSI(${momentum.parameters.rsi_period}) > ${momentum.parameters.rsi_threshold} + SMA(${momentum.parameters.sma_period})`;
+                document.getElementById("momentum-position").innerText = 
+                    `Position: ${posOpen ? 'OPEN' : 'NONE'}`;
+
+                // Funding Status
+                const fundingResp = await fetch("http://localhost:8002/funding");
+                const funding = await fundingResp.json();
+                const ratesHtml = funding.rates.map(r => 
+                    `<div>${r.symbol}: <strong>${r.annualized_pct.toFixed(2)}%</strong> ann</div>`
+                ).join('');
+                document.getElementById("funding-rates").innerHTML = ratesHtml;
+
+                // On-Chain Status
+                const onchainResp = await fetch("http://localhost:8002/onchain");
+                const onchain = await onchainResp.json();
+                if (onchain.data) {
+                    document.getElementById("onchain-status").innerHTML = `
+                        <div>Fee: ${onchain.data.fee_fast} sat/vB</div>
+                        <div>Mempool: ${onchain.data.mempool_size?.toLocaleString() || 'N/A'} TX</div>
+                    `;
+                }
+            } catch (e) {
+                console.error("Status fetch failed:", e);
+            }
+        }
+
+        // Refresh status every 60 seconds
+        setInterval(fetchStatus, 60000);
+
+        function log(text) {
+            const div = document.createElement("div");
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+            logDiv.prepend(div);
+        }
+    </script>
+</body>
+
+</html>

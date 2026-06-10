@@ -99,6 +99,7 @@ export function PortfolioTreemap({ portfolio, usdJpy }: PortfolioTreemapProps) {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length > 0) {
             const data = payload[0].payload as TreemapData;
@@ -106,7 +107,7 @@ export function PortfolioTreemap({ portfolio, usdJpy }: PortfolioTreemapProps) {
             return (
                 <div className="bg-background border rounded-lg p-3 shadow-lg">
                     <p className="font-bold text-sm mb-2">
-                        {data.ticker ? `[${data.ticker}] ` : ''}{data.name}
+                        {data.ticker ? `[${data.ticker}] ` : ''}{data.name || '不明'}
                     </p>
                     <p className="text-xs text-muted-foreground mb-1">
                         種別: {data.type}
@@ -131,29 +132,11 @@ export function PortfolioTreemap({ portfolio, usdJpy }: PortfolioTreemapProps) {
         return null;
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const CustomizedContent = (props: any) => {
-        const { x, y, width, height, name, gainLossRate, size } = props;
-
-        // nameやsizeがundefinedの場合は空のrectのみ返す
-        if (!name || size === undefined) {
-            return (
-                <g>
-                    <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        style={{
-                            fill: '#cccccc',
-                            stroke: '#fff',
-                            strokeWidth: 2,
-                        }}
-                    />
-                </g>
-            );
-        }
-
+        const { x, y, width, height, name, size, gainLossRate } = props;
         const color = getColor(gainLossRate || 0);
+        const displayName = name || '不明';
 
         return (
             <g>
@@ -178,7 +161,7 @@ export function PortfolioTreemap({ portfolio, usdJpy }: PortfolioTreemapProps) {
                         fontSize={13}
                         fontWeight="600"
                     >
-                        {name.length > 15 ? name.substring(0, 12) + '...' : name}
+                        {displayName.length > 15 ? displayName.substring(0, 12) + '...' : displayName}
                     </text>
                 )}
                 {width > 80 && height > 60 && size !== undefined && (

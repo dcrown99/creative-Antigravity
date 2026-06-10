@@ -34,6 +34,7 @@ const LABEL_MAPPING: Record<string, string> = {
     'NISA_GROWTH': 'NISA成長投資枠',
     'TOKUTEI': '特定口座',
     'NISA_TSUMITATE': 'NISAつみたて投資枠',
+    'IDECO': 'iDeCo',
     'Unknown': '不明',
     'NISA': 'NISA口座',
 };
@@ -80,7 +81,7 @@ function CustomPieChart({ data }: { data: AllocationItem[] }) {
 
 export function AssetAllocationChart({ data }: AssetAllocationChartProps) {
     return (
-        <Card className="col-span-3">
+        <Card>
             <CardHeader>
                 <CardTitle>資産配分</CardTitle>
             </CardHeader>

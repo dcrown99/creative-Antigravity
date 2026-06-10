@@ -1,62 +1,70 @@
-# syntax=docker/dockerfile:1
+# =============================================================================
+# STAGE 1: base - 依存関係のインストール層 (キャッシュのキー)
+# =============================================================================
+FROM node:22-slim AS base
+# pnpmをグローバルにインストール
+RUN npm install -g pnpm
 
-# -----------------------------------------------------------------------------
-# Base Stage: 共通設定
-# -----------------------------------------------------------------------------
-FROM node:20-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-RUN apk add --no-cache libc6-compat openssl
-
-# -----------------------------------------------------------------------------
-# Builder Stage: Turbo Prune によるスコープ分離 (最重要)
-# -----------------------------------------------------------------------------
-FROM base AS builder
-WORKDIR /app
-RUN npm install -g turbo
-COPY . .
-# money-master とその依存パッケージだけを抽出
-# これにより、無関係なアプリの変更によるキャッシュ無効化を防ぐ
-RUN turbo prune --scope=money-master --docker
-
-# -----------------------------------------------------------------------------
-# Installer Stage: 依存関係のインストール
-# -----------------------------------------------------------------------------
-FROM base AS installer
 WORKDIR /app
 
-# 1. 依存関係定義(json)とロックファイルのみをコピー
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm-lock.yaml ./
+# 1. Monorepoのルート依存関係ファイルをコピー (キャッシュヒット率最大化)
+COPY package.json pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 
-# 2. 依存関係インストール (ここが最も時間がかかるためキャッシュを効かせる)
-RUN pnpm install --no-frozen-lockfile
+# 2. 共有パッケージとアプリ固有のファイルをコピー
+COPY packages /app/packages
+COPY apps/money-master/package.json apps/money-master/next.config.ts apps/money-master/tsconfig.json apps/money-master/
+COPY apps/money-master/prisma apps/money-master/prisma
 
-# 3. ソースコードをコピー (ここが変わってもインストールはスキップされる)
-COPY --from=builder /app/out/full/ .
+# 3. 依存関係のインストール (ロックファイルに変更がない限りキャッシュ再利用)
+RUN pnpm install --frozen-lockfile
 
-# 4. Prisma Client 生成
-WORKDIR /app/apps/money-master
-RUN pnpm exec prisma generate
-
-# -----------------------------------------------------------------------------
-# Runner Stage: 実行用軽量イメージ
-# -----------------------------------------------------------------------------
-FROM base AS runner
-WORKDIR /app
-
-# インストーラーから必要なファイルだけをコピー
-COPY --from=installer /app .
-
-WORKDIR /app/apps/money-master
-
+# =============================================================================
+# STAGE 1.5: dev - 開発環境層 (Hot Reloading)
+# =============================================================================
+FROM base AS dev
 ENV NODE_ENV=development
+# Prisma用にOpenSSLをインストール (Bookworm = openssl 3.0)
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# 開発サーバー起動
+CMD ["pnpm", "--filter", "money-master", "dev"]
+
+# =============================================================================
+# STAGE 2: builder - アプリケーションのビルド層
+# =============================================================================
+FROM base AS builder
+
+WORKDIR /app
+
+# 1. アプリケーションのソースコードと静的ファイルをコピー
+COPY apps/money-master/src apps/money-master/src
+COPY apps/money-master/public apps/money-master/public
+
+# 2. Next.jsアプリケーションのビルド (standaloneモードで最小構成を生成)
 ENV NEXT_TELEMETRY_DISABLED 1
+RUN pnpm --filter money-master run build
 
-# HMRポーリング制御用 (デフォルトはOFFにして負荷を下げる)
-ENV WATCHPACK_POLLING=false
+# =============================================================================
+# STAGE 3: runner - 実行環境層 (最小限のイメージ)
+# =============================================================================
+FROM node:22-slim AS runner
 
-EXPOSE 3000
+# Prisma用にOpenSSLをインストール
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-CMD ["pnpm", "dev"]
+WORKDIR /app
+
+# 1. Next.jsのstandalone成果物をmonorepo構造でコピー
+COPY --from=builder /app/apps/money-master/.next/standalone ./
+COPY --from=builder /app/apps/money-master/.next/static ./apps/money-master/.next/static
+COPY --from=builder /app/apps/money-master/public ./apps/money-master/public
+
+# 2. DBファイルをコピー
+COPY --from=builder /app/apps/money-master/prisma/dev.db ./apps/money-master/prisma/dev.db
+
+# 3. 環境変数
+ENV NODE_ENV production
+ENV PORT 3000
+
+# 実行コマンド (standaloneはmonorepo構造を保持)
+CMD ["node", "apps/money-master/server.js"]

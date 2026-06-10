@@ -1,0 +1,12 @@
+{
+  "mode": "parity",
+  "metrics": {
+    "profit_factor": 1.22,
+    "total_net_profit": 280785.0,
+    "total_trades": 178,
+    "win_rate": 24.32,
+    "max_drawdown_pct": 19.0,
+    "sharpe_ratio": 0.99,
+    "recovery_factor": 1.2
+  }
+}

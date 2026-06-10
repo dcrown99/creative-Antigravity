@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Portfolio, Asset, HistoryEntry } from "@/types";
+import { Asset } from "@/types";
 import { useAssetsContext } from "@/contexts/AssetsContext";
 import { formatCurrency } from "@/lib/utils";
 import { updateAllAssetPrices } from "@/lib/actions";
@@ -16,32 +16,51 @@ import {
   TableRow,
 } from "@repo/ui";
 import { Card, Button, Badge } from "@repo/ui";
-import { Plus, Pencil, Trash2, ArrowUpDown, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpDown, RefreshCw, Download } from "lucide-react";
 
 interface AssetListClientProps {
-  initialPortfolio: Portfolio;
   initialUsdJpy: number;
-  initialHistory: HistoryEntry[];
 }
 
 export function AssetListClient({
-  initialPortfolio,
   initialUsdJpy,
-  initialHistory,
 }: AssetListClientProps) {
-  const { assets: portfolio, setAssets, deleteAsset } = useAssetsContext();
+  const { assets, setAssets, deleteAsset } = useAssetsContext();
   const router = useRouter();
   const [sortConfig, setSortConfig] = useState<{ key: keyof Asset | 'value' | 'gainLoss'; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/export');
+      if (!response.ok) throw new Error('Export failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `assets_${new Date().toISOString().split('T')[0]}.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('エクスポートに失敗しました');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Sync initial data from page to context
   useEffect(() => {
-    if (initialPortfolio) {
-      setAssets(initialPortfolio);
-    }
-  }, [initialPortfolio, setAssets]);
-
-  const assets = portfolio?.assets || [];
+    // The initialPortfolio prop is no longer passed, so we don't need to sync it here.
+    // The context should manage its own state, potentially fetching on mount if empty.
+    // If initial data is still needed, it should be passed directly as `initialAssets`
+    // and `setAssets(initialAssets)` would be called.
+  }, [setAssets]);
 
   const handleSort = (key: keyof Asset | 'value' | 'gainLoss') => {
     setSortConfig((current) => ({
@@ -50,13 +69,15 @@ export function AssetListClient({
     }));
   };
 
-  const sortedAssets = [...assets].sort((a, b) => {
+  const sortedAssets = [...assets.assets].sort((a, b) => {
     const aValue = getValue(a, initialUsdJpy);
     const bValue = getValue(b, initialUsdJpy);
     const aGain = getGain(a, initialUsdJpy);
     const bGain = getGain(b, initialUsdJpy);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let aCompare: any = a[sortConfig.key as keyof Asset];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let bCompare: any = b[sortConfig.key as keyof Asset];
 
     if (sortConfig.key === 'value') {
@@ -85,7 +106,7 @@ export function AssetListClient({
       localStorage.setItem('last_price_update', Date.now().toString());
       router.refresh();
     } catch (error) {
-      console.error('Price update error:', error);
+      console.warn('Price update error:', error);
       if (!silent) {
         alert('株価更新に失敗しました');
       }
@@ -123,6 +144,14 @@ export function AssetListClient({
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold tracking-tight">資産一覧</h2>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {isExporting ? 'エクスポート中...' : 'Markdown'}
+          </Button>
           <Button
             variant="outline"
             onClick={() => handleUpdatePrices(false)}

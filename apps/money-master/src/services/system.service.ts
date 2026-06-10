@@ -11,7 +11,8 @@ export async function getCategoryRules(): Promise<CategoryRule[]> {
   return [];
 }
 
-export async function saveCategoryRules(rules: CategoryRule[]): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function saveCategoryRules(_rules: CategoryRule[]): Promise<void> {
   // Placeholder implementation
 }
 
@@ -43,6 +44,6 @@ export async function saveAnalysisLog(log: Omit<AnalysisLog, "id">): Promise<Ana
 
   return {
     ...created,
-    sources: JSON.parse(created.sources)
+    sources: created.sources ? JSON.parse(created.sources) : []
   } as AnalysisLog;
 }

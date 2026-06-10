@@ -33,15 +33,20 @@ WORKDIR /app
 # -----------------------------------------------------------------------------
 # Python Dependencies (Cached)
 # -----------------------------------------------------------------------------
-COPY requirements.txt .
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# pipキャッシュをマウントしてインストール時間を短縮
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock* ./
+
+# uvキャッシュをマウントしてインストール時間を短縮
+ENV UV_COMPILE_BYTECODE=1
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
 # -----------------------------------------------------------------------------
 # Runtime Setup
 # -----------------------------------------------------------------------------
+ENV PATH="/app/.venv/bin:$PATH"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/python3.11/site-packages/nvidia/cudnn/lib
 
 # ソースコードは頻繁に変わるため最後にコピー

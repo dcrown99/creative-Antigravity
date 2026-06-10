@@ -1,0 +1,28 @@
+{
+  "mode": "validate",
+  "in_sample": {
+    "profit_factor": 2.0,
+    "total_net_profit": 1304506.0,
+    "total_trades": 151,
+    "win_rate": 56.95,
+    "max_drawdown_pct": 9.0,
+    "sharpe_ratio": 7.75,
+    "recovery_factor": 15.68
+  },
+  "out_of_sample": {
+    "profit_factor": 1.32,
+    "total_net_profit": 208981.0,
+    "total_trades": 64,
+    "win_rate": 53.12,
+    "max_drawdown_pct": 13.0,
+    "sharpe_ratio": 1.17,
+    "recovery_factor": 8.0
+  },
+  "judgment": {
+    "verdict": "WARN",
+    "is_pf": 2.0,
+    "oos_pf": 1.32,
+    "degradation_pct": 34.0,
+    "message": "OOS PF 1.32 OK but degradation 34% > 30%"
+  }
+}

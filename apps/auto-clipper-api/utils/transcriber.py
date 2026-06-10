@@ -1,4 +1,5 @@
 import os
+import warnings
 import subprocess
 from faster_whisper import WhisperModel
 import imageio_ffmpeg
@@ -15,7 +16,7 @@ if torch.cuda.is_available():
     torch.backends.cudnn.allow_tf32 = True
 
 # Suppress specific warnings
-import warnings
+
 warnings.filterwarnings("ignore", message=".*TensorFloat-32.*")
 warnings.filterwarnings("ignore", message=".*std\(\): degrees of freedom is <= 0.*")
 
@@ -32,14 +33,21 @@ def _extract_audio(video_path: str, output_path: str) -> None:
         raise RuntimeError(f"ffmpeg failed to extract audio: {e}")
 
 def get_cached_pipeline(hf_token: str):
-    """Get or load the diarization pipeline (Singleton)."""
+    """Get or load the diarization pipeline (Singleton).
+    
+    Returns None if pyannote.audio is not available (graceful degradation).
+    """
     global _diarization_pipeline
     if _diarization_pipeline is not None:
         return _diarization_pipeline
 
     print("Loading pyannote.audio pipeline (Cold Start)...")
-    from pyannote.audio import Pipeline
-    from pyannote.audio.core.task import Specifications, Problem, Resolution
+    try:
+        from pyannote.audio import Pipeline
+        from pyannote.audio.core.task import Specifications, Problem, Resolution
+    except ImportError as e:
+        print(f"Warning: pyannote.audio not available. Diarization disabled. ({e})")
+        return None
     
     # Use use_auth_token directly as token argument is not supported in this version
     try:

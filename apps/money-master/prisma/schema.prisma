@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -23,6 +24,7 @@ model Asset {
   dividendRate     Decimal?
   dividendYield    Decimal?
   nextDividendDate String?
+  dividendFrequency String?   // 'quarterly', 'semiannual', 'annual', 'monthly'
   sector           String?
   manualPrice      Decimal?
   balance          Decimal?
@@ -62,7 +64,7 @@ model Dividend {
   amount    Decimal
   currency  String
 
-  asset     Asset    @relation(fields: [assetId], references: [id])
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([assetId])
@@ -77,13 +79,17 @@ model HistoryEntry {
   data       String?  // JSON string for detailed breakdown (e.g. by asset type)
 }
 
+
+
 model AnalysisLog {
-  id      String   @id @default(uuid())
-  date    String
-  title   String
-  summary String
-  script  String
-  sources String   // JSON string
+  id       String  @id @default(uuid())
+  date     String
+  title    String
+  summary  String
+  script   String?
+  sources  String? // JSON string
+
+  @@index([date])
 }
 
 model CategoryRule {
@@ -91,3 +97,11 @@ model CategoryRule {
   pattern  String @unique
   category String
 }
+
+model AllocationTarget {
+  id            String   @id @default(uuid())
+  assetType     String   @unique
+  targetPercent Float
+  updatedAt     DateTime @updatedAt
+}
+

@@ -88,7 +88,8 @@ class YouTubeClient:
 
         tags = tags or []
         # Title limit check
-        if len(title) > 100: title = title[:97] + "..."
+        if len(title) > 100:
+            title = title[:97] + "..."
 
         body = {
             'snippet': {

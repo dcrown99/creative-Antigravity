@@ -9,6 +9,7 @@
     ],
     "exports": {
         "./eslint": "./eslint.config.mjs",
+        "./eslint.config.mjs": "./eslint.config.mjs",
         "./tsconfig.json": "./tsconfig.json",
         "./tailwind.config": "./tailwind.config.ts"
     },

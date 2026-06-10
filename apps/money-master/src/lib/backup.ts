@@ -127,6 +127,33 @@ export async function deleteBackup(backupFileName: string): Promise<void> {
 }
 
 /**
+ * Get the full path to a backup file (for download)
+ * @param backupFileName Backup file name
+ * @returns Full path to the backup file, or null if invalid/not found
+ */
+export async function getBackupPath(backupFileName: string): Promise<string | null> {
+    // Security: Prevent path traversal
+    if (backupFileName.includes('..') || backupFileName.includes('/') || backupFileName.includes('\\')) {
+        return null;
+    }
+
+    // Validate it's a backup file
+    if (!backupFileName.startsWith('backup-') && !backupFileName.startsWith('pre-restore-')) {
+        return null;
+    }
+
+    const backupPath = path.join(BACKUP_DIR, backupFileName);
+
+    // Check if file exists
+    try {
+        await fs.access(backupPath);
+        return backupPath;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Clean up old backups (older than 30 days)
  */
 export async function cleanOldBackups(retentionDays: number = 30): Promise<number> {

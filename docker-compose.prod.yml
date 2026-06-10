@@ -1,0 +1,112 @@
+# Docker Compose Production Configuration
+# 本番環境固有のオーバーライド設定
+# Usage: docker compose -f docker-compose.base.yml -f docker-compose.prod.yml up -d
+
+services:
+  # ------------------------------
+  # Infrastructure
+  # ------------------------------
+  redis:
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  voicevox:
+    restart: unless-stopped
+
+  # ------------------------------
+  # Money Master
+  # ------------------------------
+  money-master:
+    build:
+      target: prod
+    environment:
+      DATABASE_URL: file:./dev.db
+      NODE_ENV: production
+    volumes:
+      - money-master-data:/app/apps/money-master/prisma
+    restart: unless-stopped
+
+  # ------------------------------
+  # Market Watcher
+  # ------------------------------
+  market-watcher:
+    environment:
+      - PORTFOLIO_DB_PATH=/data/dev.db
+      - PORTFOLIO_PATH=/app/data/portfolio.json
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - money-master-data:/data:ro
+    restart: unless-stopped
+
+  # ------------------------------
+  # Auto Clipper API
+  # ------------------------------
+  auto-clipper-api:
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - IMAGEMAGICK_BINARY=/usr/bin/convert
+    volumes:
+      - clipper-output:/app/output
+      - /mnt/gdrive:/mnt/gdrive
+    restart: unless-stopped
+
+  # ------------------------------
+  # Auto Clipper Worker
+  # ------------------------------
+  auto-clipper-worker:
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - clipper-output:/app/output
+      - /mnt/gdrive:/mnt/gdrive
+    restart: unless-stopped
+
+  # ------------------------------
+  # Auto Clipper Web
+  # ------------------------------
+  auto-clipper-web:
+    build:
+      target: prod
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+
+  # ------------------------------
+  # My Kindle
+  # ------------------------------
+  my-kindle:
+    build:
+      target: prod
+    environment:
+      - NODE_ENV=production
+      - MANGA_DIR=/mnt/gdrive
+    volumes:
+      - /mnt/manga:/mnt/gdrive:ro
+    restart: unless-stopped
+
+  # ------------------------------
+  # AI Talker
+  # ------------------------------
+  ai-talker:
+    build:
+      target: prod
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NEXT_PUBLIC_GEMINI_MODEL=gemini-2.5-pro
+      - NEXT_PUBLIC_VOICEVOX_URL=http://voicevox:50021
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # ------------------------------
+  # Dozzle (Logs)
+  # ------------------------------
+  dozzle:
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  money-master-data:
+  clipper-output:

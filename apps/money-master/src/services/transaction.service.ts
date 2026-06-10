@@ -1,8 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, PrismaTransaction } from "@/lib/prisma";
 import { Transaction, TransactionType } from "@/types";
 import { Calculator } from "@/lib/calculator";
 
-function mapPrismaTransactionToTransaction(prismaTransaction: any): Transaction {
+function mapPrismaTransactionToTransaction(prismaTransaction: PrismaTransaction): Transaction {
   return {
     id: prismaTransaction.id,
     date: prismaTransaction.date, // Already stored as string in DB
@@ -16,13 +16,27 @@ function mapPrismaTransactionToTransaction(prismaTransaction: any): Transaction 
   };
 }
 
-function mapTransactionToPrismaInput(transactionData: Partial<Transaction>): any {
-  const { createdAt, ...rest } = transactionData;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTransactionToPrismaInput(transactionData: Partial<Transaction>): Record<string, unknown> {
+  const { createdAt, id: _id, ...rest } = transactionData;
+
+  // Normalize date format to YYYY-MM-DD if present
+  let normalizedDate = rest.date;
+  if (normalizedDate) {
+    // Check if date is in YYYYMMDD format (8 digits, no hyphens)
+    if (/^\d{8}$/.test(normalizedDate)) {
+      normalizedDate = `${normalizedDate.slice(0, 4)}-${normalizedDate.slice(4, 6)}-${normalizedDate.slice(6, 8)}`;
+    }
+  }
+
   return {
     ...rest,
-    ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
+    ...(normalizedDate !== undefined ? { date: normalizedDate } : {}),
+    ...(createdAt !== undefined ? { createdAt: new Date(createdAt) } : {}),
   };
 }
+
+
 
 export async function getTransactions(): Promise<Transaction[]> {
   const transactions = await prisma.transaction.findMany({
@@ -46,15 +60,16 @@ export async function getRecentTransactions(limit: number = 5): Promise<Transact
   return transactions.map(mapPrismaTransactionToTransaction);
 }
 
-
 export async function createTransaction(data: Omit<Transaction, "id" | "createdAt">) {
-  return await prisma.transaction.create({ data: mapTransactionToPrismaInput(data) });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return await prisma.transaction.create({ data: mapTransactionToPrismaInput(data) as any });
 }
 
 export async function updateTransaction(id: string, data: Partial<Transaction>) {
   return await prisma.transaction.update({
     where: { id },
-    data: mapTransactionToPrismaInput(data),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: mapTransactionToPrismaInput(data) as any,
   });
 }
 
@@ -114,7 +129,7 @@ export async function overrideAllTransactions(transactions: Transaction[]): Prom
   await prisma.transaction.deleteMany({});
   await prisma.transaction.createMany({
     data: transactions.map((t) => {
-      const { id, createdAt, ...rest } = t;
+      const { id: _id, createdAt: _createdAt, ...rest } = t;
       return {
         ...rest,
         // Ensure amount is handled correctly by Prisma (number -> Decimal auto-conversion works fine for inputs)
@@ -130,7 +145,7 @@ export async function detectMissingDividends(): Promise<Transaction[]> {
 export async function registerDividends(dividends: Transaction[]): Promise<void> {
   await prisma.transaction.createMany({
     data: dividends.map((d) => {
-      const { id, createdAt, ...rest } = d;
+      const { id: _id, createdAt: _createdAt, ...rest } = d;
       return rest;
     }),
   });

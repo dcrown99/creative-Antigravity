@@ -29,7 +29,7 @@ export function classifyTransaction(description: string, dbRules: CategoryRule[]
       if (patternStr && target.includes(patternStr)) {
         return rule.category;
       }
-    } catch (e) {
+    } catch {
       continue;
     }
   }

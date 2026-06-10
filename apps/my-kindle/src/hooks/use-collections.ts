@@ -1,6 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { Collection } from '@/types';
 
 export function useCollections() {
     const collections = useLiveQuery(() => db.collections.toArray());

@@ -1,5 +1,6 @@
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # .env ファイルの読み込み
@@ -10,13 +11,13 @@ def get_required_env(key: str, description: str):
     if not value or value == "YOUR_API_KEY_HERE":
         print(f"\n❌ Configuration Error: {key} is missing or invalid.")
         print(f"👉 {description}")
-        print(f"   Please edit 'apps/market-watcher/.env' and set the correct value.\n")
+        print("   Please edit 'apps/market-watcher/.env' and set the correct value.\n")
         sys.exit(1)
     return value
 
 # Configuration
 GEMINI_API_KEY = get_required_env(
-    "GEMINI_API_KEY", 
+    "GEMINI_API_KEY",
     "Google Gemini API Key is required for market analysis."
 )
 

@@ -1,0 +1,10 @@
+pnpm lint-staged
+
+# Auto-update GEMINI.md Last Updated date (Windows compatible)
+if git diff --cached --name-only | grep -q "GEMINI.md"; then
+  powershell -Command "
+    \$date = Get-Date -Format 'yyyy-MM-dd'
+    (Get-Content GEMINI.md -Encoding UTF8) -replace 'Last Updated:\*\* [0-9]{4}-[0-9]{2}-[0-9]{2}', \"Last Updated:** \$date\" | Set-Content GEMINI.md -Encoding UTF8
+  "
+  git add GEMINI.md
+fi

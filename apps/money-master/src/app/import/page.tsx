@@ -16,7 +16,7 @@ export default function ImportPage() {
   const [parsedTransactions, setParsedTransactions] = useState<Partial<Transaction>[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  const handleFileLoaded = (content: string, filename: string) => {
+  const handleFileLoaded = (content: string) => {
     try {
       const format = detectFormat(content);
       if (format === 'unknown') {

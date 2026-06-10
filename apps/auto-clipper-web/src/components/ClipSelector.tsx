@@ -1,19 +1,35 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import WavesurferPlayer from '@wavesurfer/react';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Switch, Label, Badge, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@repo/ui";
 import { Play, Pause, Scissors, Sparkles, MonitorSmartphone, AlignVerticalDistributeStart, Music, UploadCloud } from "lucide-react";
 import { API_BASE_URL } from '@/lib/api';
 
+interface Candidate {
+  start: number;
+  end: number;
+  narration_script?: string;
+  thumbnail_title?: string;
+  reason?: string;
+}
+
+interface Job {
+  video_path: string;
+  candidates: Candidate[];
+}
+
 interface ClipSelectorProps {
-  job: any;
+  job: Job;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSelect: (options: any) => void;
 }
 
 export default function ClipSelector({ job, onSelect }: ClipSelectorProps) {
   const [selectedId, setSelectedId] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [wavesurfer, setWavesurfer] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [regions, setRegions] = useState<any>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -39,12 +55,14 @@ export default function ClipSelector({ job, onSelect }: ClipSelectorProps) {
       .catch(err => console.error("Failed to fetch BGM list", err));
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onReady = (ws: any) => {
     setWavesurfer(ws);
     setIsPlaying(false);
     ws.setVolume(0);
     const regionsPlugin = ws.registerPlugin(RegionsPlugin.create());
     setRegions(regionsPlugin);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     regionsPlugin.on('region-clicked', (region: any, e: any) => {
       e.stopPropagation(); region.play();
       if (videoRef.current) { videoRef.current.currentTime = region.start; videoRef.current.play(); }
@@ -154,7 +172,7 @@ export default function ClipSelector({ job, onSelect }: ClipSelectorProps) {
       </Card>
       <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
         <h3 className="font-semibold text-muted-foreground ml-1">AI推奨クリップ ({candidates.length})</h3>
-        {candidates.map((c: any, i: number) => (
+        {candidates.map((c: Candidate, i: number) => (
           <Card key={i} className={`cursor-pointer transition-all hover:shadow-md ${selectedId === i ? 'border-primary ring-1 ring-primary shadow-md bg-primary/5' : 'hover:border-primary/50'}`} onClick={() => setSelectedId(i)}>
             <CardHeader className="p-4 pb-2">
               <div className="flex justify-between items-start"><Badge variant={selectedId === i ? "default" : "secondary"}>#{i + 1}</Badge><span className="text-xs text-muted-foreground font-mono">{c.start.toFixed(0)}-{c.end.toFixed(0)}s</span></div>

@@ -1,7 +1,4 @@
-"use client";
-
 import { Transaction } from "@/types";
-import { Badge } from "@repo/ui";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 

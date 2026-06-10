@@ -15,7 +15,10 @@ from utils.event_bus import subscribe_job_updates
 from tasks import process_video_task, render_video_task, create_digest_task
 
 app = FastAPI()
-init_db()
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -89,12 +92,14 @@ async def get_bgm_list():
     return {"files": [os.path.basename(f) for f in files]}
 
 def get_video_url(vpath: str) -> str:
-    if not vpath: return None
+    if not vpath:
+        return None
     abs_temp = os.path.abspath(TEMP_DIR)
     abs_vpath = os.path.abspath(vpath)
     if abs_vpath.startswith(abs_temp):
         rel_path = abs_vpath[len(abs_temp):].replace(os.sep, '/')
-        if rel_path.startswith('/'): rel_path = rel_path[1:]
+        if rel_path.startswith('/'):
+            rel_path = rel_path[1:]
         return f"/temp/{rel_path}"
     else:
         if os.path.dirname(vpath) == TEMP_DIR:
@@ -133,7 +138,7 @@ async def stream_job_status(job_id: str):
                 if data.get('video_path'):
                     data['video_path'] = get_video_url(data['video_path'])
                 yield f"data: {json.dumps(data)}\n\n"
-            except:
+            except Exception:
                 yield f"data: {message}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

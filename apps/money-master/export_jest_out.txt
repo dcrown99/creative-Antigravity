@@ -1,0 +1,69 @@
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm.
+FAIL src/services/__tests__/export.service.test.ts
+  ExportService
+    generateMarkdownExport
+      竏・should generate valid markdown with header and date (23 ms)
+      竏・should include summary table with totals (2 ms)
+      竏・should group assets by type (2 ms)
+      竏・should include asset details with ticker (2 ms)
+      竏・should include dividend info for dividend-paying assets (1 ms)
+      竏・should convert USD assets to JPY (1 ms)
+      竏・should handle empty asset array
+      ﾃ・should translate account types to Japanese (2 ms)
+      竏・should sort assets by value within each type group (1 ms)
+      竏・should include iDeCo trust assets (1 ms)
+
+  笳・ExportService 窶ｺ generateMarkdownExport 窶ｺ should translate account types to Japanese
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "TOKUTEI"
+    Received string:    "# 菫晄怏雉・肇荳隕ｧ
+    繧ｨ繧ｯ繧ｹ繝昴・繝域律: 2026-02-20ﾂｷ
+    ## 繧ｵ繝槭Μ繝ｼ
+    | 鬆・岼 | 驥鷹｡・|
+    |:---|---:|
+    | 邱剰ｳ・肇 | ・･1,568,049 |
+    | 邱上さ繧ｹ繝・| ・･1,485,279 |
+    | 邱乗錐逶・| +・･82,770 (+5.6%) |ﾂｷ
+    ## 譌･譛ｬ譬ｪ (1驫俶氛)ﾂｷ
+    ### 繝医Κ繧ｿ閾ｪ蜍戊ｻ・(7203.T)
+    - 蜿｣蠎ｧ: 迚ｹ螳・    - 菫晄怏: 100譬ｪ
+    - 蜊倅ｾ｡: ・･2,500 竊・・･2,850
+    - 隧穂ｾ｡鬘・ ・･285,000 | 謳咲寢: +・･35,000 (+14.0%)
+    - 蟷ｴ髢馴・蠖・ ・･7,500 (蛻ｩ蝗槭ｊ 2.6%)ﾂｷ
+    ## 邀ｳ蝗ｽ譬ｪ (1驫俶氛)ﾂｷ
+    ### Apple Inc (AAPL)
+    - 蜿｣蠎ｧ: NISA謌宣聞
+    - 菫晄怏: 10譬ｪ
+    - 蜊倅ｾ｡: $150 竊・$180
+    - 隧穂ｾ｡鬘・ ・･270,000 | 謳咲寢: +・･45,000 (+20.0%)
+    - 蟷ｴ髢馴・蠖・ ・･1,440 (蛻ｩ蝗槭ｊ 0.5%)ﾂｷ
+    ## 謚戊ｳ・ｿ｡險・(1驫俶氛)ﾂｷ
+    ### OneDC S&P500 IDX
+    - 蜿｣蠎ｧ: iDeCo
+    - 菫晄怏: 10,000蜿｣
+    - 蜊倅ｾ｡: ・･10,279 竊・・･13,049
+    - 隧穂ｾ｡鬘・ ・･13,049 | 謳咲寢: +・･2,770 (+26.9%)ﾂｷ
+    ## 驫陦・(1驫俶氛)ﾂｷ
+    ### 譎ｮ騾夐宣≡
+    - 谿矩ｫ・ ・･1,000,000
+    "
+
+      114 |             const result = generateMarkdownExport(mockAssets, mockUsdJpy);
+      115 |
+    > 116 |             expect(result).toContain('TOKUTEI');
+          |                            ^
+      117 |             expect(result).toContain('NISA謌宣聞');
+      118 |             expect(result).toContain('iDeCo');
+      119 |         });
+
+      at Object.toContain (src/services/__tests__/export.service.test.ts:116:28)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 9 passed, 10 total
+Snapshots:   0 total
+Time:        1.267 s, estimated 3 s
+Ran all test suites matching /src\\services\\__tests__\\export.service.test.ts/i.

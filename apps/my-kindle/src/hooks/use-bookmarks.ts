@@ -1,6 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { Bookmark } from '@/types';
 
 export function useBookmarks(bookName?: string) {
     const bookmarks = useLiveQuery(() => {

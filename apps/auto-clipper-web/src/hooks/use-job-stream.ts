@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 
 export function useJobStream(jobId: string | null) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState<Error | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -20,6 +21,7 @@ export function useJobStream(jobId: string | null) {
         eventSource.onmessage = (event) => {
             try {
                 const parsedData = JSON.parse(event.data);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setData((prev: any) => ({ ...prev, ...parsedData }));
             } catch (e) {
                 console.error('Failed to parse SSE data', e);

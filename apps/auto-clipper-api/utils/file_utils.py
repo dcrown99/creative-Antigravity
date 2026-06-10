@@ -1,6 +1,5 @@
 import os
 import shutil
-import logging
 from config import FINAL_OUTPUT_DIR
 
 def save_to_storage(source_path: str, target_filename: str) -> str:

@@ -1,0 +1,192 @@
+# Docker Compose Development Configuration
+# 開発環境固有のオーバーライド設定
+# Usage: docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up
+
+services:
+  # ------------------------------
+  # Infrastructure
+  # ------------------------------
+  db:
+    restart: always
+    ports:
+      - "5432:5432"
+
+  redis:
+    restart: always
+
+  voicevox:
+    restart: unless-stopped
+
+  # ------------------------------
+  # Quant Brain
+  # ------------------------------
+  quant-brain:
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/antigravity
+      - ENV=dev
+    volumes:
+      - ./apps/quant-brain:/app
+    restart: always
+
+  # ------------------------------
+  # Money Master
+  # ------------------------------
+  money-master:
+    build:
+      target: dev
+    environment:
+      DATABASE_URL: file:/app/data/money-master.db
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      NEXT_PUBLIC_QUANT_API_URL: "http://localhost:8002"
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    volumes:
+      - ./apps/money-master:/app/apps/money-master
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/money-master/node_modules
+      - mm_next_cache:/app/apps/money-master/.next
+      - ./data:/app/data
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+    restart: always
+
+  # ------------------------------
+  # Market Watcher
+  # ------------------------------
+  market-watcher:
+    environment:
+      - PORTFOLIO_DB_PATH=/data/money-master.db
+      - PORTFOLIO_PATH=/app/data/portfolio.json
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./apps/market-watcher:/app
+      - ./data/money-master.db:/data/money-master.db:ro
+      - ./data:/app/data:ro
+    restart: always
+
+  # ------------------------------
+  # Auto Clipper API
+  # ------------------------------
+  auto-clipper-api:
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - IMAGEMAGICK_BINARY=/usr/bin/convert
+    volumes:
+      - ./apps/auto-clipper-api:/app
+      - H:/Movie:/mnt/gdrive
+    restart: always
+
+  # ------------------------------
+  # Auto Clipper Worker
+  # ------------------------------
+  auto-clipper-worker:
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - ./apps/auto-clipper-api:/app
+      - /app/node_modules
+      - H:/Movie:/mnt/gdrive
+    restart: always
+
+  # ------------------------------
+  # Auto Clipper Web
+  # ------------------------------
+  auto-clipper-web:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    volumes:
+      - ./apps/auto-clipper-web:/app/apps/auto-clipper-web
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/auto-clipper-web/node_modules
+      - /app/apps/auto-clipper-web/.next
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+    restart: always
+
+  # ------------------------------
+  # My Kindle
+  # ------------------------------
+  my-kindle:
+    build:
+      target: dev
+    environment:
+      - NODE_ENV=development
+      - MANGA_DIR=/mnt/gdrive
+      - WATCHPACK_POLLING=true
+      - NODE_OPTIONS=--max-old-space-size=4096
+    volumes:
+      - ./apps/my-kindle:/app/apps/my-kindle
+      - /app/node_modules
+      - /app/apps/my-kindle/node_modules
+      - /app/apps/my-kindle/.next
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - H:/漫画:/mnt/gdrive
+    restart: always
+
+  # ------------------------------
+  # AI Talker
+  # ------------------------------
+  ai-talker:
+    build:
+      target: dev
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NEXT_PUBLIC_GEMINI_MODEL=gemini-2.5-pro
+      - NEXT_PUBLIC_VOICEVOX_URL=http://voicevox:50021
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - NODE_OPTIONS=--max-old-space-size=4096
+    volumes:
+      - ./apps/ai-talker:/app/apps/ai-talker
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/ai-talker/node_modules
+      - /app/apps/ai-talker/.next
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+    restart: always
+
+  # ------------------------------
+  # News Reader
+  # ------------------------------
+  news-reader:
+    build:
+      target: dev
+    ports:
+      - "3005:3000"
+    volumes:
+      - ./apps/news-reader:/app/apps/news-reader
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/news-reader/node_modules
+      - /app/apps/news-reader/.next
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+    env_file:
+      - ./apps/news-reader/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - NODE_OPTIONS=--max-old-space-size=2048
+      - WATCHPACK_POLLING=true
+
+  # Dozzle (Logs)
+  # ------------------------------
+  dozzle:
+    restart: always
+
+volumes:
+  mm_next_cache:

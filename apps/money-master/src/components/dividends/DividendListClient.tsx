@@ -15,10 +15,10 @@ import {
     Button,
     Badge
 } from "@repo/ui";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { Trash2, RefreshCw, Pencil } from "lucide-react";
 import { deleteDividend } from "@/lib/actions";
-import { AddDividendDialog } from "./AddDividendDialog";
 import { AutoDividendDialog } from "./AutoDividendDialog";
+import { EditDividendDialog } from "./EditDividendDialog";
 import { Asset } from "@/types";
 
 interface DividendWithAsset {
@@ -36,12 +36,13 @@ interface DividendWithAsset {
 interface DividendListClientProps {
     initialDividends: DividendWithAsset[];
     assets: Asset[];
+    usdJpy: number;
 }
 
-export function DividendListClient({ initialDividends, assets }: DividendListClientProps) {
+export function DividendListClient({ initialDividends, assets, usdJpy }: DividendListClientProps) {
     const [dividends, setDividends] = useState<DividendWithAsset[]>(initialDividends);
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isAutoDialogOpen, setIsAutoDialogOpen] = useState(false);
+    const [editingDividend, setEditingDividend] = useState<DividendWithAsset | null>(null);
     const [isPending, startTransition] = useTransition();
 
     const handleDelete = async (id: string) => {
@@ -73,13 +74,9 @@ export function DividendListClient({ initialDividends, assets }: DividendListCli
                         <RefreshCw className="mr-2 h-4 w-4" />
                         再読込
                     </Button>
-                    <Button variant="outline" onClick={() => setIsAutoDialogOpen(true)}>
+                    <Button onClick={() => setIsAutoDialogOpen(true)}>
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        自動計算
-                    </Button>
-                    <Button onClick={() => setIsAddDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        配当を追加
+                        配当自動登録
                     </Button>
                 </div>
             </div>
@@ -123,14 +120,23 @@ export function DividendListClient({ initialDividends, assets }: DividendListCli
                                             <Badge variant="outline">{dividend.currency}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(dividend.id)}
-                                                disabled={isPending}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setEditingDividend(dividend)}
+                                                >
+                                                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDelete(dividend.id)}
+                                                    disabled={isPending}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -140,16 +146,17 @@ export function DividendListClient({ initialDividends, assets }: DividendListCli
                 </CardContent>
             </Card>
 
-            <AddDividendDialog
-                isOpen={isAddDialogOpen}
-                onClose={() => setIsAddDialogOpen(false)}
-                assets={assets}
-            />
-
             <AutoDividendDialog
                 isOpen={isAutoDialogOpen}
                 onClose={() => setIsAutoDialogOpen(false)}
                 assets={assets}
+                usdJpy={usdJpy}
+            />
+
+            <EditDividendDialog
+                isOpen={!!editingDividend}
+                onClose={() => setEditingDividend(null)}
+                dividend={editingDividend}
             />
         </div>
     );

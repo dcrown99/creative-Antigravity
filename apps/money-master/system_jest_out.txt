@@ -1,0 +1,50 @@
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm.
+FAIL src/services/__tests__/system.service.test.ts
+  SystemService
+    getAnalysisLogs
+      竏・should fetch and parse analysis logs (3 ms)
+    saveAnalysisLog
+      ﾃ・should save analysis log (4 ms)
+    placeholders
+      竏・getHistory should return empty array
+      竏・getCategoryRules should return empty array
+      竏・saveCategoryRules should resolve
+      竏・resetAllData should resolve
+
+  笳・SystemService 窶ｺ saveAnalysisLog 窶ｺ should save analysis log
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+      Object {
+        "data": Object {
+          "date": "2024-01-01",
+          "script": "Script",
+    -     "sources": "[\"source1\"]",
+    +     "sources": "\"[\\\"source1\\\"]\"",
+          "summary": "Summary",
+          "title": "Test Analysis",
+        },
+      },
+
+    Number of calls: 1
+
+      61 |             const result = await SystemService.saveAnalysisLog(logData);
+      62 |
+    > 63 |             expect(prisma.analysisLog.create).toHaveBeenCalledWith({
+         |                                               ^
+      64 |                 data: {
+      65 |                     ...logData,
+      66 |                 },
+
+      at Object.toHaveBeenCalledWith (src/services/__tests__/system.service.test.ts:63:47)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 5 passed, 6 total
+Snapshots:   0 total
+Time:        1.025 s, estimated 2 s
+Ran all test suites matching /src\\services\\__tests__\\system.service.test.ts/i.

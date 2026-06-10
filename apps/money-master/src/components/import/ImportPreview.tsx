@@ -28,7 +28,7 @@ import {
     Label,
     Checkbox
 } from "@repo/ui";
-import { Loader2, Brain, Save, Plus } from 'lucide-react';
+import { Loader2, Brain, Plus } from 'lucide-react';
 import { getCategoryRules, addCategoryRule, getUniqueCategories } from '@/lib/actions';
 import { classifyTransaction, CategoryRule } from '@/lib/classifier';
 import { toast } from 'sonner';
@@ -50,7 +50,6 @@ const DEFAULT_CATEGORIES = [
 export function ImportPreview({ transactions: initialTransactions, onSave, onCancel, isSaving }: ImportPreviewProps) {
     const [transactions, setTransactions] = useState<Partial<Transaction>[]>(initialTransactions);
     const [rules, setRules] = useState<CategoryRule[]>([]);
-    const [isLoadingRules, setIsLoadingRules] = useState(false);
     const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
     // Category Creation State
@@ -63,12 +62,10 @@ export function ImportPreview({ transactions: initialTransactions, onSave, onCan
     const [isLearnDialogOpen, setIsLearnDialogOpen] = useState(false);
     const [learnKeyword, setLearnKeyword] = useState("");
     const [learnCategory, setLearnCategory] = useState("");
-    const [learnTargetTransaction, setLearnTargetTransaction] = useState<Partial<Transaction> | null>(null);
 
     // ルールとカテゴリのロード
     useEffect(() => {
         const loadData = async () => {
-            setIsLoadingRules(true);
             try {
                 const [rulesData, categoriesData] = await Promise.all([
                     getCategoryRules(),
@@ -81,8 +78,6 @@ export function ImportPreview({ transactions: initialTransactions, onSave, onCan
                 setCategories(mergedCategories);
             } catch (error) {
                 console.error("Failed to load data", error);
-            } finally {
-                setIsLoadingRules(false);
             }
         };
         loadData();
@@ -168,7 +163,6 @@ export function ImportPreview({ transactions: initialTransactions, onSave, onCan
             toast.error("摘要またはカテゴリが不足しています");
             return;
         }
-        setLearnTargetTransaction(transaction);
         setLearnKeyword(transaction.description);
         setLearnCategory(transaction.category);
         setIsLearnDialogOpen(true);
@@ -191,11 +185,10 @@ export function ImportPreview({ transactions: initialTransactions, onSave, onCan
             } else {
                 toast.error("ルールの保存に失敗しました");
             }
-        } catch (error) {
+        } catch {
             toast.error("エラーが発生しました");
         } finally {
             setIsLearnDialogOpen(false);
-            setLearnTargetTransaction(null);
         }
     };
 

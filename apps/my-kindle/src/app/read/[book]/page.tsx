@@ -148,9 +148,11 @@ export default function ReadPage({ params }: PageProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'ArrowRight') {
-                settings.direction === 'rtl' ? goPrev() : goNext();
+                if (settings.direction === 'rtl') goPrev();
+                else goNext();
             } else if (e.key === 'ArrowLeft') {
-                settings.direction === 'rtl' ? goNext() : goPrev();
+                if (settings.direction === 'rtl') goNext();
+                else goPrev();
             } else if (e.key === ' ') {
                 e.preventDefault();
                 goNext();
@@ -398,13 +400,21 @@ export default function ReadPage({ params }: PageProps) {
             <div className={`absolute inset-0 z-10 flex ${showUI ? '' : ''}`}>
                 <div
                     className="w-[30%] h-full cursor-pointer hover:bg-white/5 transition-colors"
-                    onClick={(e) => { e.stopPropagation(); settings.direction === 'rtl' ? goNext() : goPrev(); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (settings.direction === 'rtl') goNext();
+                        else goPrev();
+                    }}
                     title="次へ / 戻る"
                 />
                 <div className="flex-1 h-full" onClick={() => setShowUI(!showUI)} />
                 <div
                     className="w-[30%] h-full cursor-pointer hover:bg-white/5 transition-colors"
-                    onClick={(e) => { e.stopPropagation(); settings.direction === 'rtl' ? goPrev() : goNext(); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (settings.direction === 'rtl') goPrev();
+                        else goNext();
+                    }}
                     title="戻る / 次へ"
                 />
             </div>

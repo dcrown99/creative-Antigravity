@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-    Antigravity Ultimate Edition - Master Launch Script (v2.0)
-    全9コンテナの環境設定、依存チェック、ビルド、起動、DB初期化を一括で行います。
+    Antigravity Ultimate Edition - Master Launch Script (v2.1)
+    全12コンテナの環境設定、依存チェック、ビルド、起動、DB初期化を一括で行います。
 #>
 
 $ErrorActionPreference = "Stop"
@@ -16,17 +16,17 @@ Write-Host "==============================================" -ForegroundColor Cya
 # ---------------------------------------------------------
 Write-Host "`n[0/5] 🛡️ Checking Infrastructure..." -ForegroundColor Yellow
 
-# Check for Google Drive (Crucial for Auto-Clipper)
-if (-not (Test-Path "G:\")) {
-    Write-Warning "⚠️  Google Drive (G:\) not found!"
+# Check for External Drive (Crucial for Auto-Clipper)
+if (-not (Test-Path "H:\")) {
+    Write-Warning "⚠️  External Drive (H:\) not found! Media mounts may fail."
     Write-Warning "   'Auto Clipper' and 'My Kindle' may not access remote files."
     # Automated environment: Skip prompt if running in non-interactive mode or assume yes if we can't prompt
-    # $confirm = Read-Host "   Continue anyway? (y/n)"
+    Write-Warning "   Continue anyway? (y/n)"
     # if ($confirm -ne 'y') { exit }
-    Write-Warning "   Continuing without Google Drive..."
+    Write-Warning "   Continuing without External Drive..."
 }
 else {
-    Write-Host "   ✅ Google Drive mount detected." -ForegroundColor Green
+    Write-Host "   ✅ External Drive mount detected." -ForegroundColor Green
 }
 
 # ---------------------------------------------------------
@@ -83,12 +83,26 @@ VOICEVOX_URL="http://voicevox:50021"
 GEMINI_API_KEY=""
 "@
 
+$envTalker = @"
+NEXT_PUBLIC_GEMINI_MODEL="gemini-2.5-pro"
+NEXT_PUBLIC_VOICEVOX_URL="http://voicevox:50021"
+GEMINI_API_KEY=""
+"@
+
 # Apply defaults
 Ensure-EnvFile "apps/money-master" $envMoney
 Ensure-EnvFile "apps/my-kindle" $envKindle
 Ensure-EnvFile "apps/auto-clipper-web" $envClipperWeb
 Ensure-EnvFile "apps/auto-clipper-api" $envClipperApi
 Ensure-EnvFile "apps/market-watcher" $envMarket
+Ensure-EnvFile "apps/ai-talker" $envTalker
+
+$envQuantBrain = @"
+DATABASE_URL="postgresql+asyncpg://postgres:postgres@db:5432/antigravity"
+ENV="dev"
+"@
+
+Ensure-EnvFile "apps/quant-brain" $envQuantBrain
 
 # ---------------------------------------------------------
 # 2. File System Preparation
@@ -110,10 +124,15 @@ if (Test-Path $clipperPath) {
 # ---------------------------------------------------------
 Write-Host "`n[3/5] 🧹 Cleaning & Installing Dependencies..." -ForegroundColor Yellow
 
-# Remove Legacy Root Container
-if (Test-Path "docker-compose.yml") {
-    Write-Host "   - Removing legacy root containers..." -ForegroundColor Gray
-    docker compose -f docker-compose.yml down --remove-orphans 2>$null
+# Docker Compose Split Configuration (ADR-016)
+$DockerComposeBase = "docker-compose.base.yml"
+$DockerComposeDev = "docker-compose.dev.yml"
+$DockerComposeArgs = "-f $DockerComposeBase -f $DockerComposeDev"
+
+# Remove Legacy/Previous Containers
+if ((Test-Path $DockerComposeBase) -and (Test-Path $DockerComposeDev)) {
+    Write-Host "   - Removing previous containers..." -ForegroundColor Gray
+    Invoke-Expression "docker compose $DockerComposeArgs down --remove-orphans 2>`$null"
 }
 
 # Install Root Dependencies
@@ -121,25 +140,20 @@ Write-Host "   - Running pnpm install..." -ForegroundColor Gray
 pnpm install
 
 # ---------------------------------------------------------
-# 4. Container Launch (The 9 Units)
+# 4. Container Launch (The 10 Units)
 # ---------------------------------------------------------
-Write-Host "`n[4/5] 🚀 Launching 9 Containers..." -ForegroundColor Green
+Write-Host "`n[4/5] 🚀 Launching 12 Containers (base + dev)..." -ForegroundColor Green
 
-function Launch-Compose ($path, $name) {
-    if (Test-Path $path) {
-        Write-Host "   > Starting $name..." -ForegroundColor Cyan
-        docker compose -f $path up -d --build --remove-orphans
-    }
-    else {
-        Write-Warning "   ⚠️  Skipping $name (File not found: $path)"
-    }
+# Launch Logic: Use split Docker Compose configuration
+if ((Test-Path $DockerComposeBase) -and (Test-Path $DockerComposeDev)) {
+    Write-Host "   > Using Split Compose: $DockerComposeBase + $DockerComposeDev" -ForegroundColor Cyan
+    Invoke-Expression "docker compose $DockerComposeArgs up -d --build --remove-orphans"
 }
-
-Launch-Compose "apps/money-master/docker-compose.yml" "Core: Money Master & Dozzle"
-Launch-Compose "apps/auto-clipper-api/docker-compose.yml" "Backend: Clipper API, Worker & Redis"
-Launch-Compose "apps/market-watcher/docker-compose.yml" "AI: Market Watcher & Voicevox"
-Launch-Compose "apps/my-kindle/docker-compose.yml" "App: My Kindle"
-Launch-Compose "apps/auto-clipper-web/docker-compose.yml" "App: Clipper Web"
+else {
+    Write-Error "❌ Required Docker Compose files not found!"
+    Write-Error "   Expected: $DockerComposeBase, $DockerComposeDev"
+    exit 1
+}
 
 # ---------------------------------------------------------
 # 5. Database Initialization
@@ -148,9 +162,8 @@ Write-Host "`n[5/5] 🗄️  Finalizing Database..." -ForegroundColor Yellow
 Write-Host "   - Waiting for DB container stability..." -ForegroundColor Gray
 Start-Sleep -Seconds 10
 
-if (Test-Path "apps/money-master/docker-compose.yml") {
+if (Test-Path "apps/money-master/prisma/schema.prisma") {
     Write-Host "   - Applying migrations..." -ForegroundColor Gray
-    # Using docker exec directly for robustness as per previous learnings
     docker exec money-master npx prisma generate
     docker exec money-master npx prisma migrate deploy
 }
@@ -160,11 +173,14 @@ if (Test-Path "apps/money-master/docker-compose.yml") {
 # ---------------------------------------------------------
 Write-Host "`n✅ SYSTEM ONLINE - GOD MODE ACTIVATED" -ForegroundColor Green -BackgroundColor Black
 Write-Host "==============================================" -ForegroundColor Green
-Write-Host "   💰 Money Master:   http://localhost:3001"
+Write-Host "   💰 Money Master:   http://localhost:3001 (Dev Mode)"
 Write-Host "   📚 My Kindle:      http://localhost:3002"
 Write-Host "   🎬 Auto Clipper:   http://localhost:3003"
+Write-Host "   🗣️ AI Talker:      http://localhost:3004"
 Write-Host "   ⚙️ Clipper API:    http://localhost:8000/docs"
 Write-Host "   📈 Market Watcher: http://localhost:8001/docs"
+Write-Host "   🧠 Quant Brain:    http://localhost:8002/docs"
+Write-Host "   🗄️ TimescaleDB:    localhost:5432"
 Write-Host "   📊 System Logs:    http://localhost:8888"
 Write-Host "----------------------------------------------" -ForegroundColor Gray
 Write-Host "   ⚠️  ACTION REQUIRED:" -ForegroundColor Yellow

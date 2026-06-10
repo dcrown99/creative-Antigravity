@@ -1,7 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import cv2
 import numpy as np
-import os
 import textwrap
 
 def generate_thumbnail(frame: np.ndarray, title: str, output_path: str) -> bool:

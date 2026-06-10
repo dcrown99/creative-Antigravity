@@ -1,0 +1,19 @@
+{
+  "mode": "parity",
+  "metrics": {
+    "profit_factor": 6.38,
+    "total_net_profit": 38181.0,
+    "total_trades": 12,
+    "win_rate": 66.67,
+    "max_drawdown_pct": 1.0,
+    "sharpe_ratio": 2.64,
+    "recovery_factor": 1.26
+  },
+  "judgment": {
+    "verdict": "PASS",
+    "mt5_pf": 6.38,
+    "python_pf": 6.66,
+    "deviation_pct": 4.2,
+    "message": "PF deviation 4.2% within tolerance (<=20%)"
+  }
+}

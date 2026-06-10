@@ -32,6 +32,7 @@ model Asset {
   dividendRate     Float?        // 配当金額 (1株あたり)
   dividendYield    Float?        // 配当利回り (%)
   nextDividendDate String?       // 次回配当支払日 (ISO 8601)
+  dividendFrequency String?       // 配当頻度 ("monthly"|"quarterly"|"semiannual"|"annual")
   sector           String?       // セクター (例: "Technology", "Finance")
   manualPrice      Float?        // 手動設定価格 (APIで取得できない場合)
   balance          Float?        // 現金残高 (type="Cash"の場合)
@@ -144,6 +145,38 @@ model CategoryRule {
   category String          // 割り当てるカテゴリ
 }
 ```
+
+---
+
+#### AllocationTarget (目標配分)
+
+リバランス計算用の目標資産配分を保存。
+
+```prisma
+model AllocationTarget {
+  id            String   @id @default(uuid())
+  assetType     String   @unique  // 資産タイプ (JP_STOCK, US_STOCK, TRUST, etc.)
+  targetPercent Float             // 目標配分率 (%)
+  updatedAt     DateTime @updatedAt
+}
+```
+
+---
+
+### 配当頻度自動判定
+
+**関数**: `inferDividendFrequency(assetId)` in `dividend.service.ts`
+
+過去2年の配当履歴から配当間隔を分析し、配当頻度を自動推定。
+
+| 平均間隔 | 推定頻度 |
+|:---|:---|
+| ≤ 1.5ヶ月 | monthly |
+| ≤ 4.5ヶ月 | quarterly |
+| ≤ 9ヶ月 | semiannual |
+| > 9ヶ月 | annual |
+
+価格更新時(`updateSingleAssetPrice`)に自動実行され、`dividendFrequency`が未設定の資産に対して値を設定。
 
 ---
 
@@ -373,6 +406,7 @@ Copy-Item apps\money-master\data\money-master.db `
 2. **Prisma Select**: 必要なフィールドのみ取得
 3. **Parallel Price Fetch**: 並列リクエスト (5-10 concurrent)
 4. **Next.js Caching**: `unstable_cache` + `revalidateTag` (実装済み確認)
+5. **Docker Optimization**: Multi-Stage Buildによるイメージサイズ削減とビルド高速化
 
 ### Recommendations
 
@@ -391,7 +425,13 @@ DATABASE_URL="file:./data/money-master.db"
 
 ## Future Enhancements
 
-- **Scheduled Price Updates**: cron job for daily price updates
+### Planned (2025-12-14 Approved)
+- **Scheduled Price Updates**: cron job for daily price updates (price-scheduler.ts)
+- **Allocation Target Persistence**: Save rebalance targets to DB (AllocationTarget model)
+- **Mobile Responsive**: Optimize dashboard/tables for mobile devices
+
+### Under Consideration
 - **Multi-currency Support**: より多くの通貨ペアに対応
 - **Export to Excel**: レポートをExcel形式でエクスポート
 - **Tax Calculation**: 確定申告用の損益計算機能
+

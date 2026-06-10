@@ -15,9 +15,9 @@ def get_crop_coordinates(video_path: str, start_time: float, end_time: float, ta
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     
-    target_width = int(height * target_ratio)
+
     
     start_frame = int(start_time * fps)
     end_frame = int(end_time * fps)

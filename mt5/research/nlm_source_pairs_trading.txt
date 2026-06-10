@@ -1,0 +1,110 @@
+# Statistical Pairs Trading & Cointegration in FX Markets
+# Source: Compiled from quantinsti.com, academic research summaries
+
+## History and Institutional Evidence (Grade A)
+
+Pairs trading was first introduced in the mid-1980s by a group of quantitative researchers employed by Morgan Stanley (notably Nunzio Tartaglia's group). It remains one of the most widely used strategies in hedge funds and institutional quantitative finance.
+
+Academic papers (Engle & Granger 1987, Johansen 1991) provide the theoretical foundation via cointegration theory. Multiple studies (EUR.NL, ResearchGate, SSRN) confirm profitability in FX markets over 10-year periods.
+
+Key study result: A cointegration trading strategy applied to 27 currency exchange rate combinations found 23 cointegrated pairs, yielding an average realized return of 6.5% over a 10-year period (EUR.NL thesis).
+
+## Alpha Source (Structural, NOT Temporary)
+
+The alpha source is STRUCTURAL MEAN REVERSION grounded in:
+1. **Macroeconomic linkages**: Currency pairs with shared economic drivers (commodity exporters AUD/NZD, European economic integration EUR/GBP) have fundamental reasons to co-move.
+2. **Cointegration persistence**: Even if short-term deviations occur due to news/sentiment, the long-run equilibrium is restored by economic fundamentals.
+3. **Market neutrality**: Long one currency, short another = hedged against overall market direction. HFTs compete on microseconds; this strategy exploits multi-day/week mean reversion that HFTs cannot profitably arbitrage.
+
+NOT technical-indicator based: Entry is triggered by STATISTICAL DEVIATION (Z-score) from a fundamental long-run relationship, not by price patterns.
+
+## Key Concepts
+
+### Cointegration
+- Two non-stationary time series whose linear combination IS stationary
+- Identified by: Augmented Dickey-Fuller (ADF) test on the spread
+- If p-value < 0.05 on ADF test → spread is stationary → pair is cointegrated
+- Johansen test used for multivariate cointegration
+
+### Spread Definition
+```
+Spread = log(Price_A) - n * log(Price_B)
+```
+Where `n` = hedge ratio, calculated by OLS regression of Price_A on Price_B.
+
+### Z-score
+```
+Z = (Spread - rolling_mean(Spread, window)) / rolling_std(Spread, window)
+```
+- Measures how many standard deviations the spread is from its rolling mean
+- New distribution has mean=0, std=1
+
+## Concrete Entry/Exit Rules (Standard Academic Implementation)
+
+### Entry:
+- **LONG spread** (buy A, sell B): when Z-score < -2.0
+  (spread is abnormally low → expect reversion upward)
+- **SHORT spread** (sell A, buy B): when Z-score > +2.0
+  (spread is abnormally high → expect reversion downward)
+
+### Exit:
+- **Close position**: when Z-score reverts to between -0.5 and +0.5
+  (spread returned to near-equilibrium)
+- **Stop Loss**: when |Z-score| > 3.0 (cointegration may have broken down)
+
+### Parameters (tunable):
+- Entry threshold: Z = ±2.0 (range: 1.5 to 2.5)
+- Exit threshold: Z = ±0.5 (range: 0.0 to 0.5)
+- Rolling window for Z-score: 20-60 bars (daily bars typical)
+- ADF test lookback: 250-500 bars (1-2 years of daily data)
+
+## Best FX Pairs for Cointegration
+
+### Highest historical cointegration:
+1. **EURGBP** - Both European, shared macro drivers, strong cointegration evidence
+2. **AUDNZD** - Both commodity exporters, close economic ties
+3. **EURUSD / GBPUSD basket** - USD leg creates co-movement
+4. **AUDCAD** - Both commodity currencies (oil vs iron ore)
+
+### Note on pair stability:
+- AUD/NZD cointegration broke down post-2021 due to different COVID monetary policies
+- EUR/GBP retains stronger long-run cointegration due to institutional ties (ECB/BOE interaction)
+- Regime shifts (global crises, policy divergence) can break cointegration → requires rolling ADF re-test
+
+## Implementation Approach for MT5 (Retail-Compatible)
+
+### Adaptation for single-account FX:
+Since MT5 retail accounts can't truly go "long one / short another" as a market-neutral portfolio in the traditional sense (we trade FX pairs, not individual currencies), implementation must:
+1. Select a CROSS PAIR where the arbitrage is embedded (e.g., EURGBP = EUR/USD ÷ GBP/USD)
+2. OR trade the SPREAD DIRECTLY on a correlated pair basket
+
+### Simplified approach for MT5:
+- Use EURGBP (or AUDNZD) as a single instrument
+- Model its "fair value" using EURUSD and GBPUSD as reference
+- Entry when EURGBP deviates significantly from implied cross rate
+- Exit when it reverts
+
+### Alternative: AUDNZD Z-score reversion
+- Use AUDNZD directly as the spread instrument
+- Calculate rolling Z-score of AUDNZD (it IS the spread between AUD and NZD)
+- Enter when Z-score extreme, exit at mean reversion
+
+## Backtest Expectations
+
+- Trade frequency: 100-300 trades/year on H4 timeframe
+- Average holding period: 1-5 days  
+- Win rate: typically 60-70% (mean reversion strategies have high WR)
+- Profit Factor: 1.5-2.5 in favorable regimes
+- Key risk: cointegration breakdown during regime changes (requires stop-loss)
+
+## Risk of Cointegration Breakdown
+- 40% of historically cointegrated pairs lose cointegration in next period
+- Mitigation: Rolling ADF test, re-validate every quarter
+- Stop loss at |Z| > 3.0 prevents catastrophic loss on breakdown
+
+## Grade Assessment: A
+- Theoretical foundation: Nobel-prize winning econometric theory (Engle & Granger 2003)
+- Institutional use: Standard hedge fund strategy since 1980s
+- Academic validation: Multiple peer-reviewed papers confirm FX profitability
+- Structural alpha: Based on economic fundamentals, not pattern recognition
+- HFT-immune: Exploits multi-day deviations, not microsecond inefficiencies

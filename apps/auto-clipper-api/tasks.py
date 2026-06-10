@@ -1,5 +1,4 @@
 import os
-import traceback
 from celery_app import celery_app
 from database import update_job_status, get_job
 from config import TEMP_DIR
@@ -36,8 +35,10 @@ def process_video_task(job_id: str, url: str):
             try:
                 llm_results = analyze_transcript_semantics(segments)
                 if llm_results:
-                    for item in llm_results: candidates.append(item)
-            except Exception as e: print(f"LLM error: {e}")
+                    for item in llm_results:
+                        candidates.append(item)
+            except Exception as e:
+                print(f"LLM error: {e}")
         
         if not candidates:
             start, end = analyze_audio(video_path, transcript=segments)
@@ -55,10 +56,12 @@ def render_video_task(job_id: str, start: float, end: float, vertical_mode: bool
                       upload_to_youtube: bool = False, youtube_privacy: str = "private"):
     try:
         job = get_job(job_id)
-        if not job: return
+        if not job:
+            return
         video_path = job.get('video_path')
         if not video_path or not os.path.exists(video_path):
-            update_job_status(job_id, "failed"); return
+            update_job_status(job_id, "failed")
+            return
         
         update_job_status(job_id, "editing")
         output_filename = f"{job_id}_clip.mp4"
@@ -80,7 +83,8 @@ def render_video_task(job_id: str, start: float, end: float, vertical_mode: bool
                                narration_path=narration_audio_path, subtitle_position=subtitle_position)
             success = engine.render(output_path, bgm_path=bgm_path, bgm_volume=0.1)
         except Exception as e:
-            print(f"VideoEngine failed: {e}"); success = False
+            print(f"VideoEngine failed: {e}")
+            success = False
         
         thumbnail_path_local = None
         thumbnail_url = None
@@ -94,7 +98,8 @@ def render_video_task(job_id: str, start: float, end: float, vertical_mode: bool
                             thumbnail_url = f"/temp/{job_id}_thumb.jpg"
                             thumbnail_path_local = thumb_path
                             save_to_storage(thumb_path, f"{sanitize_filename(job.get('title', 'video'))}_thumb_{job_id[:8]}.jpg")
-                except Exception as e: print(f"Thumbnail error: {e}")
+                except Exception as e:
+                    print(f"Thumbnail error: {e}")
 
             save_to_storage(output_path, f"{sanitize_filename(job.get('title', 'video'))}_clip_{job_id[:8]}.mp4")
             
@@ -108,37 +113,47 @@ def render_video_task(job_id: str, start: float, end: float, vertical_mode: bool
                     res = yt.upload_video(output_path, title=metadata['title'], description=metadata['description'],
                                           tags=metadata['tags'], category_id=metadata['categoryId'], 
                                           privacy_status=youtube_privacy, thumbnail_path=thumbnail_path_local)
-                    if res.get("success"): youtube_url = res.get("url")
-                except Exception as e: print(f"Upload failed: {e}")
+                    if res.get("success"):
+                        youtube_url = res.get("url")
+                except Exception as e:
+                    print(f"Upload failed: {e}")
 
             update_job_status(job_id, "completed", f"/temp/{output_filename}", thumbnail_url=thumbnail_url, youtube_url=youtube_url)
         else:
             update_job_status(job_id, "failed")
     except Exception as e:
-        print(f"Render task failed: {e}"); update_job_status(job_id, "failed")
+        print(f"Render task failed: {e}")
+        update_job_status(job_id, "failed")
 
 @celery_app.task(name="tasks.create_digest")
 def create_digest_task(job_id: str, duration_minutes: int, model_name: str, bgm_file: str = None,
                        upload_to_youtube: bool = False, youtube_privacy: str = "private"):
     try:
         job = get_job(job_id)
-        if not job: return
+        if not job:
+            return
         video_path = job.get('video_path')
         if not video_path or not os.path.exists(video_path):
-            update_job_status(job_id, "failed"); return
+            update_job_status(job_id, "failed")
+            return
 
         update_job_status(job_id, "planning_digest")
         transcript = job.get('transcript', [])
-        if not transcript: update_job_status(job_id, "failed"); return
+        if not transcript:
+            update_job_status(job_id, "failed")
+            return
 
         script = generate_digest_script(transcript, duration_minutes, model_name)
-        if not script: update_job_status(job_id, "failed"); return
+        if not script:
+            update_job_status(job_id, "failed")
+            return
 
         update_job_status(job_id, "editing_digest")
         output_filename = f"{job_id}_digest.mp4"
         output_path = os.path.join(TEMP_DIR, output_filename)
         bgm_path = None
-        if bgm_file: bgm_path = os.path.join(ASSETS_BGM_DIR, os.path.basename(bgm_file))
+        if bgm_file:
+            bgm_path = os.path.join(ASSETS_BGM_DIR, os.path.basename(bgm_file))
 
         success = create_digest_video(video_path, script, output_path, transcript=transcript, bgm_path=bgm_path)
 
@@ -162,19 +177,23 @@ def create_digest_task(job_id: str, duration_minutes: int, model_name: str, bgm_
                             thumb_title = "HIGHLIGHTS" 
                             if generate_thumbnail(best_frame, thumb_title, thumb_path):
                                 thumbnail_path_local = thumb_path
-                    except Exception as e: print(f"Digest thumbnail error: {e}")
+                    except Exception as e:
+                        print(f"Digest thumbnail error: {e}")
 
                     # 3. Upload
                     yt = YouTubeClient()
                     res = yt.upload_video(output_path, title=metadata['title'], description=metadata['description'],
                                           tags=metadata['tags'], category_id=metadata['categoryId'], 
                                           privacy_status=youtube_privacy, thumbnail_path=thumbnail_path_local)
-                    if res.get("success"): youtube_url = res.get("url")
-                except Exception as e: print(f"Digest Upload failed: {e}")
+                    if res.get("success"):
+                        youtube_url = res.get("url")
+                except Exception as e:
+                    print(f"Digest Upload failed: {e}")
 
             candidates = [{"start": s['start'], "end": s['end'], "reason": s.get('summary')} for s in script]
             update_job_status(job_id, "completed", f"/temp/{output_filename}", candidates=candidates, youtube_url=youtube_url)
         else:
             update_job_status(job_id, "failed")
     except Exception as e:
-        print(f"Digest task failed: {e}"); update_job_status(job_id, "failed")
+        print(f"Digest task failed: {e}")
+        update_job_status(job_id, "failed")

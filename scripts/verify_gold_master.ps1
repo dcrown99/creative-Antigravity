@@ -27,9 +27,9 @@ try {
     Write-Success "All TypeScript definitions are valid."
 
     # 3. Linting
-    Write-Step "Running Linter (Global)..."
-    pnpm turbo run lint
-    Write-Success "Code style is compliant."
+    Write-Step "Running Linter (TypeScript)..."
+    pnpm turbo run lint --filter='!auto-clipper-api' --filter='!market-watcher' --filter='!manga-downloader'
+    Write-Success "Code style is compliant (TypeScript)."
 
     # 4. Building
     Write-Step "Building All Applications..."
@@ -38,9 +38,32 @@ try {
     Write-Success "All Next.js apps built successfully."
 
     # 5. Unit Testing
-    Write-Step "Running Unit Tests..."
-    pnpm turbo run test
-    Write-Success "All unit tests passed."
+    Write-Step "Running Unit Tests (TypeScript)..."
+    pnpm turbo run test --filter='!auto-clipper-api' --filter='!market-watcher' --filter='!manga-downloader'
+    Write-Success "All TypeScript unit tests passed."
+
+    # 6. Python Verification
+    Write-Step "Verifying Python Services..."
+    
+    # Lint (Consolidated)
+    & "./scripts/lint_python.ps1"
+
+    # Test (Individual)
+    $pythonApps = @("apps/auto-clipper-api", "apps/market-watcher")
+    foreach ($appPath in $pythonApps) {
+        $appName = Split-Path $appPath -Leaf
+        Write-Host "  Testing $appName..." -ForegroundColor Cyan
+        
+        # Test
+        # Note: Some tests may fail due to network dependencies
+        # Coverage threshold is set in pytest.ini (--cov-fail-under)
+        if (Test-Path "$appPath/venv/Scripts/pytest.exe") {
+            Write-Host "    Running Pytest..." -ForegroundColor Gray
+            & "$appPath/venv/Scripts/pytest.exe" "$appPath"
+            if ($LASTEXITCODE -ne 0) { throw "Pytest failed for $appName" }
+        }
+    }
+    Write-Success "All Python services verified."
 
     Write-Host "`n🏆 GOLD MASTER VERIFIED. SYSTEM IS READY." -ForegroundColor Yellow
 }

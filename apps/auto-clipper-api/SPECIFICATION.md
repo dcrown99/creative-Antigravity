@@ -36,6 +36,7 @@ graph TD
 | **ASR (音声認識)** | faster-whisper | CUDA高速化 |
 | **TTS (音声合成)** | VOICEVOX | Dockerコンテナ |
 | **動画ライブラリ** | MoviePy | **1.0.3** (固定) |
+| **ビルド** | Docker | Multi-Stage Build |
 
 ## 3. コア機能
 

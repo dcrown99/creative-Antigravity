@@ -1,6 +1,6 @@
 import { LibraryItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui';
-import { BookOpen, CheckCircle, Clock, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@repo/ui';
 import { Button } from '@repo/ui';
 

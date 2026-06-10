@@ -1,4 +1,6 @@
 import yahooFinance from "yahoo-finance2";
+import { withRetry } from "@/lib/rate-limiter";
+import { getCachedPrice, setCachedPrice } from "@/lib/stock-price-cache";
 
 export interface StockInfo {
     symbol: string;
@@ -15,6 +17,21 @@ export interface StockInfo {
 export async function getStockInfo(symbol: string): Promise<StockInfo> {
     if (!symbol) {
         return { symbol: "", name: "", price: 0, currency: "JPY", success: false, error: "Symbol is required" };
+    }
+
+    // Check cache first to reduce API calls
+    const cached = getCachedPrice(symbol);
+    if (cached) {
+        return {
+            symbol,
+            name: symbol,
+            price: cached.price,
+            currency: cached.currency,
+            dividendRate: cached.dividendRate,
+            dividendYield: cached.dividendYield,
+            nextDividendDate: cached.nextDividendDate,
+            success: true
+        };
     }
 
     try {
@@ -42,6 +59,7 @@ export async function getStockInfo(symbol: string): Promise<StockInfo> {
 
                 if (match) {
                     const price = parseFloat(match[1].replace(/,/g, ''));
+                    setCachedPrice(symbol, { price, currency: 'JPY' });
                     return { symbol, name: symbol, price, currency: 'JPY', success: true };
                 }
             }
@@ -78,6 +96,7 @@ export async function getStockInfo(symbol: string): Promise<StockInfo> {
                 throw new Error("Could not parse price from HTML (Minkabu & Yahoo)");
             }
 
+            setCachedPrice(symbol, { price, currency: 'JPY' });
             return {
                 symbol,
                 name: symbol,
@@ -88,11 +107,19 @@ export async function getStockInfo(symbol: string): Promise<StockInfo> {
         }
 
         // For other symbols, use yahoo-finance2
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const yf = typeof yahooFinance === 'function' ? new (yahooFinance as any)() : yahooFinance;
 
-        const result = await yf.quoteSummary(symbol, {
+        // Auto-append .T suffix for Japanese stock codes (4-digit numbers without suffix)
+        let querySymbol = fetchSymbol;
+        if (/^\d{4}$/.test(fetchSymbol)) {
+            querySymbol = fetchSymbol + '.T';
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await withRetry(() => yf.quoteSummary(querySymbol, {
             modules: ['price', 'summaryDetail', 'calendarEvents']
-        }) as any;
+        })) as any;
 
         const price = result?.price;
         const summaryDetail = result?.summaryDetail;
@@ -108,7 +135,7 @@ export async function getStockInfo(symbol: string): Promise<StockInfo> {
             exDividendDate: calendarEvents?.exDividendDate || summaryDetail?.exDividendDate || null,
         };
 
-        return {
+        const stockResult = {
             symbol: price.symbol || symbol,
             name: price.longName || price.shortName || symbol,
             price: price.regularMarketPrice || 0,
@@ -118,6 +145,17 @@ export async function getStockInfo(symbol: string): Promise<StockInfo> {
             nextDividendDate: dividendData.exDividendDate ? new Date(dividendData.exDividendDate).toISOString().split('T')[0] : null,
             success: true
         };
+
+        // Cache the result for future requests
+        setCachedPrice(symbol, {
+            price: stockResult.price,
+            currency: stockResult.currency,
+            dividendRate: stockResult.dividendRate,
+            dividendYield: stockResult.dividendYield,
+            nextDividendDate: stockResult.nextDividendDate ?? undefined,
+        });
+
+        return stockResult;
 
     } catch (error) {
         console.error(`Stock price fetch error for ${symbol}:`, error);

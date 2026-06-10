@@ -21,6 +21,7 @@ interface UseLibraryResult {
 }
 
 // Helper to get progress from localStorage
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getBookProgress(bookName: string) {
     if (typeof window === 'undefined') return null;
     try {
@@ -63,9 +64,9 @@ export function useLibrary(): UseLibraryResult {
         if (!data) return [];
         if (Array.isArray(data)) {
             // Handle legacy/mixed response
-            return data.map((f: any) => {
+            return data.map((f: unknown) => {
                 if (typeof f === 'string') return { name: f, size: 0, mtime: 0 };
-                return f;
+                return f as MangaFile;
             });
         }
         if ('books' in data && Array.isArray(data.books)) {

@@ -11,7 +11,7 @@ interface JobStatusProps {
     onComplete?: () => void;
 }
 
-export default function JobStatus({ jobId, onComplete }: JobStatusProps) {
+export default function JobStatus({ jobId }: JobStatusProps) {
     const { data: job, error, isConnected } = useJobStream(jobId);
 
     const renderMutation = useMutation({
@@ -54,6 +54,7 @@ export default function JobStatus({ jobId, onComplete }: JobStatusProps) {
         digestMutation.mutate();
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleRender = (options: any) => {
         renderMutation.mutate({
             start: options.start,

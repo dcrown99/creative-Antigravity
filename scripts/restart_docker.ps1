@@ -1,23 +1,8 @@
-# Antigravity Docker Manager
-# 目的: Docker環境を確実に停止・再構築・起動する
-# 使用法: ./scripts/restart_docker.ps1 [-Rebuild]
+# Antigravity Docker Manager (DEPRECATED)
+# This script is deprecated. Redirecting to redeploy_all.ps1.
 
-param (
-    [switch]$Rebuild = $false
-)
+Write-Warning "⚠️  DEPRECATED: This script is deprecated. Please use './scripts/redeploy_all.ps1' instead."
+Write-Host "Redirecting to redeploy_all.ps1..." -ForegroundColor Cyan
 
-Write-Host "🐳 Stopping Docker services..." -ForegroundColor Cyan
-# ゾンビコンテナを残さないよう orphan (定義から消えたコンテナ) も削除
-docker compose down --remove-orphans
-
-if ($Rebuild) {
-    Write-Host "🏗️  Rebuilding containers (Deep Clean)..." -ForegroundColor Magenta
-    # --no-cache: キャッシュを使わずゼロからビルド（依存関係更新時などに必須）
-    docker compose build --no-cache
-}
-
-Write-Host "🚀 Starting Docker services..." -ForegroundColor Green
-docker compose up -d
-
-Write-Host "✅ Docker services are up." -ForegroundColor Green
-docker compose ps
+# Forward execution to redeploy_all.ps1
+& "$PSScriptRoot/redeploy_all.ps1"

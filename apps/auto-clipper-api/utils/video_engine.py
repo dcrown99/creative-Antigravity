@@ -8,7 +8,7 @@ from moviepy.editor import (
 from moviepy.audio.fx.all import audio_fadein, audio_fadeout, audio_loop
 from moviepy.video.fx.all import fadein, fadeout
 from PIL import Image
-from typing import List, Dict, Optional, Tuple, Union
+from typing import List, Dict, Tuple, Union
 
 class VideoSegment:
     def __init__(self, start: float, end: float, transcript: List[Dict] = None, 
@@ -72,7 +72,8 @@ class VideoEngine:
         current_start = 0.0
         current_end = 0.0
         
-        if not segments: return []
+        if not segments:
+            return []
 
         current_start = segments[0]['start']
         current_end = segments[0]['start']
@@ -88,7 +89,8 @@ class VideoEngine:
                 current_text = ""
                 current_start = start
             
-            if not current_text: current_start = start
+            if not current_text:
+                current_start = start
             
             current_text += text
             current_end = end
@@ -115,7 +117,8 @@ class VideoEngine:
             rel_end = min(duration, item['end'])
             txt_dur = rel_end - rel_start
             
-            if txt_dur <= 0.1: continue
+            if txt_dur <= 0.1:
+                continue
             
             try:
                 txt = (TextClip(
@@ -238,6 +241,7 @@ class VideoEngine:
         )
         
         source_video.close()
-        for c in processed_clips: c.close()
+        for c in processed_clips:
+            c.close()
             
         return True

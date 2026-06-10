@@ -283,7 +283,11 @@ const { data: job, isConnected } = useJobStream(jobId);
 - `{job_id}_narration.wav`: AI解説音声
 - `{job_id}.json`: 文字起こしキャッシュ
 
-### Google Drive (rclone)
+### External Drive (H:)
+
+- **役割**: 生成された動画クリップの永続化保存先。
+- **マウント**: WSL `drvfs` を使用して `/mnt/h/Movie` をコンテナ内の `/mnt/gdrive` にマウント。
+- **パス**: `H:\Movie` (Windows Host) -> `/mnt/h/Movie` (WSL) -> `/mnt/gdrive` (Container)
 
 完成動画を `/mnt/gdrive/Clips/` に自動保存:
 - `{title}_clip_{job_id}.mp4`
@@ -320,6 +324,7 @@ const { data: job, isConnected } = useJobStream(jobId);
 2. **非同期処理**: Celery + Redisによるバックグラウンド処理
 3. **リアルタイム更新**: SSEによるポーリング負荷削減
 4. **CUDA最適化**: faster-whisper, pyannote.audioでGPU使用
+5. **Docker最適化**: Multi-Stage Buildによる高速デプロイ
 
 ---
 

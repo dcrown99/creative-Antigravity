@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui";
 import { HistoryEntry } from "@/services/analytics.service";
-import { TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface PerformanceSummaryProps {

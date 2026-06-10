@@ -1,0 +1,25 @@
+{
+  "mode": "validate",
+  "in_sample": {
+    "profit_factor": 2.79,
+    "total_net_profit": 14911.0,
+    "total_trades": 2,
+    "win_rate": 0.0,
+    "max_drawdown_pct": 1.0,
+    "sharpe_ratio": 0.56,
+    "recovery_factor": 0.13
+  },
+  "out_of_sample": {
+    "profit_factor": null,
+    "total_net_profit": -5521.0,
+    "total_trades": 2,
+    "win_rate": 0.0,
+    "max_drawdown_pct": 1.0,
+    "sharpe_ratio": -0.4,
+    "recovery_factor": -0.17
+  },
+  "judgment": {
+    "verdict": "ERROR",
+    "message": "Could not extract PF from reports"
+  }
+}

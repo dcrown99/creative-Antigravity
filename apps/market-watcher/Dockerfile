@@ -1,25 +1,25 @@
-# syntax=docker/dockerfile:1
-
 FROM python:3.11-slim
 
 WORKDIR /app
-ENV PYTHONPATH=/app
 
-# System Dependencies (Cached)
-RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+# System dependencies (if needed for ccxt compilation)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Python Dependencies (Cached)
-COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir -r requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Source Code
-COPY . .
+# Install dependencies via uv (using pyproject.toml)
+COPY pyproject.toml uv.lock* ./
+ENV UV_COMPILE_BYTECODE=1
+RUN uv sync --frozen --no-dev
+COPY src/ ./src/
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Command
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

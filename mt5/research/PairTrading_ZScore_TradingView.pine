@@ -1,0 +1,92 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TradingView
+
+//@version=5
+indicator("Pairs Trading Z-Score [Antigravity]", shorttitle="Z-Score Pair", overlay=false)
+
+// =========================================================================
+// Inputs
+// =========================================================================
+grp_setup = "=== Pair Setup ==="
+sym2      = input.symbol("BINANCE:ETHUSDT", "Secondary Symbol (Denominator)", group=grp_setup, tooltip="Primary is chart symbol (Numerator). Ratio = Primary / Secondary")
+use_log   = input.bool(true, "Use Log Ratio", group=grp_setup, tooltip="Use natural log of ratio for cointegration (Log(A/B) = Log(A) - Log(B))")
+
+grp_z     = "=== Z-Score Parameters ==="
+z_len     = input.int(20, "Z-Score Window", minval=2, group=grp_z)
+entry_z   = input.float(2.5, "Entry Z-Score (±)", minval=0.1, step=0.1, group=grp_z, tooltip="Trigger entry when Z > +Entry or Z < -Entry")
+exit_z    = input.float(0.0, "Exit Z-Score (±)", minval=0.0, step=0.1, group=grp_z, tooltip="Trigger exit (mean reversion) when |Z| crosses Exit")
+stop_z    = input.float(3.0, "Stop Z-Score (±)", minval=0.1, step=0.1, group=grp_z, tooltip="Emergency stop when cointegration breaks completely")
+
+grp_ui    = "=== UI Settings ==="
+show_bg   = input.bool(true, "Highlight Entry Zones", group=grp_ui)
+
+// =========================================================================
+// Data Fetch & Calculations
+// =========================================================================
+// Fetch secondary symbol data
+close2 = request.security(sym2, timeframe.period, close)
+
+// Calculate Spread / Ratio
+float spread = na
+if not na(close) and not na(close2) and close2 > 0
+    if use_log
+        spread := math.log(close / close2)
+    else
+        spread := close / close2
+
+// Calculate Z-Score
+float sma_spread = ta.sma(spread, z_len)
+float std_spread = ta.stdev(spread, z_len)
+float z_score    = (spread - sma_spread) / std_spread
+
+// =========================================================================
+// Trading Logic & Signals
+// =========================================================================
+// LONG Trigger: Z-Score < -Entry (Ratio is abnormally cheap)
+// -> Buy Primary, Sell Secondary
+bool go_long  = ta.crossunder(z_score, -entry_z)
+bool long_tp  = ta.crossover(z_score, -exit_z)
+bool long_sl  = ta.crossunder(z_score, -stop_z)
+
+// SHORT Trigger: Z-Score > +Entry (Ratio is abnormally expensive)
+// -> Sell Primary, Buy Secondary
+bool go_short = ta.crossover(z_score, entry_z)
+bool short_tp = ta.crossunder(z_score, exit_z)
+bool short_sl = ta.crossover(z_score, stop_z)
+
+// =========================================================================
+// Plotting
+// =========================================================================
+// Baseline & Thresholds
+hline(0, "Mean", color=color.gray, linestyle=hline.style_solid)
+hline(entry_z, "+Entry", color=color.red, linestyle=hline.style_dashed)
+hline(-entry_z, "-Entry", color=color.green, linestyle=hline.style_dashed)
+hline(exit_z, "+Exit", color=color.new(color.red, 50), linestyle=hline.style_dotted)
+hline(-exit_z, "-Exit", color=color.new(color.green, 50), linestyle=hline.style_dotted)
+hline(stop_z, "+Stop Loss", color=color.maroon, linestyle=hline.style_solid)
+hline(-stop_z, "-Stop Loss", color=color.new(color.maroon, 0), linestyle=hline.style_solid)
+
+// Z-Score Line
+z_color = z_score > entry_z ? color.red : z_score < -entry_z ? color.green : color.orange
+plot(z_score, "Z-Score", color=z_color, linewidth=2)
+
+// Background Highlighting
+bgcolor(show_bg and z_score > entry_z ? color.new(color.red, 90) : na, title="Short Zone")
+bgcolor(show_bg and z_score < -entry_z ? color.new(color.green, 90) : na, title="Long Zone")
+
+// Signal Markers on Indicator
+plotshape(go_long, title="Long Signal", style=shape.triangleup, location=location.bottom, color=color.green, size=size.small)
+plotshape(go_short, title="Short Signal", style=shape.triangledown, location=location.top, color=color.red, size=size.small)
+
+// =========================================================================
+// Alerts
+// =========================================================================
+// Aggregated conditions for any Entry
+bool any_entry = go_long or go_short
+bool any_exit  = long_tp or short_tp
+bool any_stop  = long_sl or short_sl
+
+alertcondition(go_long, title="Long Entry Alert", message="Pair Trade LONG Threshold Reached: {{ticker}} is under-valued vs secondary. Z-Score: {{plot_0}}")
+alertcondition(go_short, title="Short Entry Alert", message="Pair Trade SHORT Threshold Reached: {{ticker}} is over-valued vs secondary. Z-Score: {{plot_0}}")
+alertcondition(any_exit, title="Take Profit Alert", message="Pair Trade EXIT (Mean Reversion). Z-Score reverted to Exit Threshold.")
+alertcondition(any_stop, title="Stop Loss Alert", message="Pair Trade STOP LOSS (Cointegration Break). Z-Score extreme deviation.")

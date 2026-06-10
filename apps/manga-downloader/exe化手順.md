@@ -7,7 +7,7 @@
 ### 1. PyInstaller のインストール
 
 ```bash
-pip install pyinstaller
+uv add --dev pyinstaller
 ```
 
 ### 2. 実行ファイルの作成
@@ -15,7 +15,7 @@ pip install pyinstaller
 以下のコマンドを実行します:
 
 ```bash
-pyinstaller --onefile --console --name "漫画ダウンローダー" --icon=NONE download_images_as_cbz.py
+uv run pyinstaller --onefile --console --name "漫画ダウンローダー" --icon=NONE download_images_as_cbz.py
 ```
 
 #### オプションの説明:
@@ -30,7 +30,7 @@ PyInstaller でビルドした後、以下の追加作業が必要です:
 
 ```bash
 # 生成された exe と同じディレクトリに Playwright のブラウザをインストール
-python -m playwright install chromium
+uv run playwright install chromium
 ```
 
 ### 4. 生成されたファイルの場所
@@ -105,7 +105,7 @@ exe = EXE(
 ### 2. spec ファイルでビルド
 
 ```bash
-pyinstaller manga_downloader.spec
+uv run pyinstaller manga_downloader.spec
 ```
 
 ## トラブルシューティング
@@ -117,9 +117,9 @@ pyinstaller manga_downloader.spec
 
 ### エラー: "Playwright executable doesn't exist"
 
-- exe 実行時に以下のコマンドを実行してください:
+- exe 実行前に以下のコマンドでインストール確認をしてください:
   ```bash
-  python -m playwright install chromium
+  uv run playwright install chromium
   ```
 
 ### ファイルサイズが大きすぎる

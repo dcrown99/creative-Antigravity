@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class PortfolioReader:
     def __init__(self, file_path):
         self.file_path = file_path
@@ -13,4 +14,4 @@ class PortfolioReader:
             with open(self.file_path, encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
-            raise Exception(f"Failed to read portfolio: {str(e)}")
+            raise Exception(f"Failed to read portfolio: {str(e)}") from e

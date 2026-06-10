@@ -1,11 +1,11 @@
 "use client";
 
-import { Portfolio, Transaction, AnalysisLog } from "@/types";
+import { Portfolio, Transaction } from "@/types";
 import { HistoryEntry } from "@/services/analytics.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui";
-import { Overview } from "@/components/dashboard/Overview";
+import { AssetHistoryChart } from "@/components/analytics/AssetHistoryChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { AIAnalystWidget } from "@/components/dashboard/AIAnalystWidget";
+
 import { PortfolioTreemap } from "@/components/dashboard/PortfolioTreemap";
 import { formatCurrency } from "@/lib/utils";
 
@@ -35,7 +35,7 @@ export function DashboardClient({
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">ダッシュボード</h2>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">総資産額</CardTitle>
@@ -80,31 +80,28 @@ export function DashboardClient({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* 左側: 資産推移グラフ (4カラム分) */}
-        <Card className="col-span-4">
+        {/* 左側: 資産推移グラフ (全幅) */}
+        <Card className="col-span-7">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">総資産推移</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <Overview data={assetHistory} />
+            <AssetHistoryChart data={assetHistory} currentTotalValue={totalValue} period={30} />
           </CardContent>
         </Card>
-
-        {/* 右側: AI分析ウィジェット (3カラム分) */}
-        <div className="col-span-3">
-          <AIAnalystWidget />
-        </div>
       </div>
 
       {/* 資産構成マップ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>資産構成マップ</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PortfolioTreemap portfolio={portfolio} usdJpy={usdJpy} />
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>資産構成マップ</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PortfolioTreemap portfolio={portfolio} usdJpy={usdJpy} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* 最近の取引 */}
       <div className="grid gap-4 grid-cols-1">
@@ -120,3 +117,4 @@ export function DashboardClient({
     </div>
   );
 }
+

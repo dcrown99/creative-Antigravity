@@ -1,0 +1,42 @@
+[project]
+name = "auto-clipper-api"
+version = "0.1.0"
+description = "Auto Clipper Video AI Service"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "yt-dlp",
+    "faster-whisper",
+    "moviepy==1.0.3",
+    "librosa",
+    "numpy",
+    "scipy",
+    "python-multipart",
+    "sqlalchemy",
+    "google-generativeai",
+    "pyannote.audio",
+    "torch",
+    "torchaudio",
+    "opencv-python",
+    "python-dotenv",
+    "requests",
+    "Pillow",
+    "celery",
+    "redis",
+    "google-api-python-client",
+    "google-auth-oauthlib",
+    "google-auth-httplib2"
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

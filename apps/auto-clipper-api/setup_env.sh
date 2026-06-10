@@ -3,7 +3,7 @@
 # Exit on error
 set -e
 
-echo "🚀 Setting up Auto-Clipper API Environment..."
+echo "🚀 Setting up Auto-Clipper API Environment using uv..."
 
 # 1. System Dependencies Check
 if ! command -v ffmpeg &> /dev/null; then
@@ -12,43 +12,22 @@ if ! command -v ffmpeg &> /dev/null; then
     exit 1
 fi
 
-# 2. Python Version Check
-# Try to find python 3.11 or 3.12, fallback to python3
-PYTHON_CMD="python3"
-if command -v python3.11 &> /dev/null; then
-    PYTHON_CMD="python3.11"
-elif command -v python3.12 &> /dev/null; then
-    PYTHON_CMD="python3.12"
-fi
-echo "🐍 Using Python: $($PYTHON_CMD --version)"
-
-# 3. Virtual Environment
-if [ ! -d "venv" ]; then
-    echo "📦 Creating virtual environment..."
-    $PYTHON_CMD -m venv venv
+# 2. uv Version Check
+if command -v uv &> /dev/null; then
+    echo "✨ Using uv: $(uv --version)"
+else
+    echo "❌ Error: uv is not found. Please install it."
+    exit 1
 fi
 
-# Activate venv
-source venv/bin/activate
-
-# 4. Install Dependencies
+# 3. Sync Dependencies
 echo "⬇️ Installing Python packages..."
-pip install --upgrade pip
+uv sync
 
-# Install torch explicitly first for CPU support (Stability First)
-# User can manually install CUDA version later if needed
-echo "   Installing PyTorch (CPU version for compatibility)..."
-# Unpinned version to support Python 3.13
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-echo "   Installing requirements..."
-pip install -r requirements.txt
-
-# 5. Create Directory Structure
+# 4. Create Directory Structure
 mkdir -p temp
 mkdir -p storage
 
 echo "✅ Setup Complete!"
 echo "👉 To start the server:"
-echo "   source venv/bin/activate"
-echo "   uvicorn main:app --reload --port 8000"
+echo "   uv run fastapi dev main.py --port 8000"

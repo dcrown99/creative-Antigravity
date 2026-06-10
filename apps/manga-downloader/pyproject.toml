@@ -1,29 +1,35 @@
-[tool.ruff]
-# Ruff設定 - Manga Downloader
-line-length = 88
-target-version = "py311"
+[project]
+name = "manga-downloader"
+version = "0.1.0"
+description = "Canvas Extractor for Manga Images"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas",
+    "numpy",
+    "python-dateutil",
+    "pytz",
+    "tzdata",
+    "yfinance",
+    "curl_cffi",
+    "multitasking",
+    "protobuf",
+    "websockets",
+    "python-dotenv",
+    "openai",
+    "requests",
+    "beautifulsoup4",
+    "tqdm",
+    "playwright"
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "ruff"
+]
 
 [tool.ruff.lint]
-# 基本的なルールセット
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "SIM", # flake8-simplify
-]
-ignore = []
-
-# 各ルールの自動修正を有効化
-fixable = ["ALL"]
-unfixable = []
-
-[tool.ruff.format]
-# フォーマット設定
-quote-style = "double"
-indent-style = "space"
-line-ending = "auto"
+# Legacy code configuration
+ignore = ["E501", "E722", "SIM105"]
+select = ["E", "F", "B", "SIM"]

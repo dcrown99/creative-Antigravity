@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   transpilePackages: ["@repo/ui"],
   serverExternalPackages: ["yahoo-finance2"],
   eslint: {
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
       config.watchOptions = {
         poll: 1000,
         aggregateTimeout: 300,
+        ignored: /node_modules/,
       };
     }
     return config;

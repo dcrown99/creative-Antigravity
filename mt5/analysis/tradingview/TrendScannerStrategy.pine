@@ -1,0 +1,158 @@
+//@version=5
+strategy("Trend Scanner Strategy (A/B Test)", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=100, commission_type=strategy.commission.percent, commission_value=0.05)
+
+// =================================
+// Parameters (Optimized for BTC 1H)
+// =================================
+// --- A/B Test Toggle ---
+usePriceAction = input.bool(true, "Use Price Action Entry (Mode B)", tooltip="ON: Zone内のピンバー・包み足でエントリー\nOFF: Zone到達(SETUP)で即エントリー")
+
+adxLen = input.int(14, "ADX / DI Length", group="Trend Settings")
+adxSmooth = input.int(14, "ADX Smoothing Length", group="Trend Settings")
+adxTh = input.int(30, "ADX Threshold", group="Trend Settings")
+atrLen = input.int(14, "ATR Length", group="Trend Settings")
+adxSlopeBars = input.int(3, "ADX Slope Bars", minval=1, maxval=10, tooltip="ADX上昇判定(安定検出推奨=3)", group="Trend Settings")
+
+lookback = input.int(10, "Swing Lookback (Bars)", group="Setup Settings")
+minPbAtr = input.float(0.5, "Min Pullback ATR", group="Setup Settings")
+maxPbAtr = input.float(1.5, "Max Pullback ATR", group="Setup Settings")
+slAtrMult = input.float(1.0, "Stop Loss ATR Multiplier (Mode A)", group="Stop & Trail Settings")
+trailAtrMult = input.float(2.0, "Trail Stop ATR Multiplier", group="Stop & Trail Settings")
+
+// --- Daily Trend Filter ---
+useDailyFilter = input.bool(true, "Use Daily SMA Filter", group="Daily Filter")
+showSmaLines = input.bool(false, "Show SMA Lines on Chart", group="Daily Filter")
+smaFastLen = input.int(50, "SMA Fast Length", group="Daily Filter")
+smaSlowLen = input.int(200, "SMA Slow Length", group="Daily Filter")
+
+// =================================
+// Indicators & Trend
+// =================================
+[plusDI, minusDI, adxValue] = ta.dmi(adxLen, adxSmooth)
+atrValue = ta.rma(ta.tr(true), atrLen)
+
+adxRising = adxValue > adxValue[adxSlopeBars]
+isTrend = adxValue >= adxTh and adxRising
+isLong = plusDI > minusDI
+isShort = minusDI > plusDI
+
+smaFast = request.security(syminfo.tickerid, "D", ta.sma(close, smaFastLen))
+smaSlow = request.security(syminfo.tickerid, "D", ta.sma(close, smaSlowLen))
+dailyBullish = smaFast > smaSlow
+dailyBearish = smaFast < smaSlow
+
+// =================================
+// Pullback Logic (Zone Detection)
+// =================================
+swingH = ta.highest(high, lookback)
+swingL = ta.lowest(low, lookback)
+
+pullbackLong = swingH - close
+pullbackShort = close - swingL
+
+distAtrLong = atrValue > 0 ? pullbackLong / atrValue : 0.0
+distAtrShort = atrValue > 0 ? pullbackShort / atrValue : 0.0
+
+bool isSetupLong = false
+bool isSetupShort = false
+
+bool longAllowed = not useDailyFilter or dailyBullish
+bool shortAllowed = not useDailyFilter or dailyBearish
+
+if isTrend and isLong
+    if distAtrLong >= minPbAtr and distAtrLong <= maxPbAtr
+        isSetupLong := longAllowed
+
+if isTrend and isShort
+    if distAtrShort >= minPbAtr and distAtrShort <= maxPbAtr
+        isSetupShort := shortAllowed
+
+bool setupLongStart = isSetupLong and not isSetupLong[1]
+bool setupShortStart = isSetupShort and not isSetupShort[1]
+
+// =================================
+// Price Action Definitions (Mode B)
+// =================================
+candleRange = high - low
+bodySize = math.abs(close - open)
+lowerWick = math.min(open, close) - low
+upperWick = high - math.max(open, close)
+
+// Pin Bar: Small body, long wick on one side
+isBullPinBar = (lowerWick > candleRange * 0.6) and (bodySize < candleRange * 0.3)
+isBearPinBar = (upperWick > candleRange * 0.6) and (bodySize < candleRange * 0.3)
+
+// Engulfing: Body completely covers previous body
+isBullEngulfing = close > open and close > open[1] and open < close[1] and close[1] < open[1]
+isBearEngulfing = close < open and close < open[1] and open > close[1] and close[1] > open[1]
+
+bool paBullish = isBullPinBar or isBullEngulfing
+bool paBearish = isBearPinBar or isBearEngulfing
+
+// =================================
+// Entry Signals
+// =================================
+bool doLongEntry = false
+bool doShortEntry = false
+float slPrice = na
+
+if strategy.opentrades == 0
+    if not usePriceAction
+        // Mode A: Mechanical
+        doLongEntry := setupLongStart
+        doShortEntry := setupShortStart
+        if doLongEntry
+            slPrice := close - (atrValue * slAtrMult)
+        if doShortEntry
+            slPrice := close + (atrValue * slAtrMult)
+    else
+        // Mode B: Price Action
+        doLongEntry := isSetupLong and paBullish
+        doShortEntry := isSetupShort and paBearish
+        if doLongEntry
+            slPrice := low - (atrValue * 0.2) // Tight SL just below PA
+        if doShortEntry
+            slPrice := high + (atrValue * 0.2) // Tight SL just above PA
+
+// =================================
+// Strategy Execution & Management
+// =================================
+var float openSL = na
+var float trailPrice = na
+
+// Trade Entry
+if doLongEntry
+    strategy.entry("Long", strategy.long)
+    openSL := slPrice
+    trailPrice := close - atrValue * trailAtrMult
+
+if doShortEntry
+    strategy.entry("Short", strategy.short)
+    openSL := slPrice
+    trailPrice := close + atrValue * trailAtrMult
+
+// Trade Management (Trailing Stop)
+if strategy.opentrades > 0
+    if strategy.position_size > 0
+        // Long Trailing
+        newTrail = close - atrValue * trailAtrMult
+        trailPrice := math.max(trailPrice, newTrail)
+        strategy.exit("Exit Long", "Long", stop=math.max(openSL, trailPrice))
+    else if strategy.position_size < 0
+        // Short Trailing
+        newTrail = close + atrValue * trailAtrMult
+        trailPrice := math.min(trailPrice, newTrail)
+        strategy.exit("Exit Short", "Short", stop=math.min(openSL, trailPrice))
+else
+    openSL := na
+    trailPrice := na
+
+// =================================
+// Visuals (Same as Indicator)
+// =================================
+bgcolor(isSetupLong ? color.new(color.green, 85) : isSetupShort ? color.new(color.red, 85) : na, title="Zone Background")
+
+plotshape(doLongEntry, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="Long Entry")
+plotshape(doShortEntry, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="Short Entry")
+
+plot(strategy.opentrades > 0 ? math.max(openSL, trailPrice) : na, color=color.orange, style=plot.style_circles, linewidth=2, title="Active Stop/Trail")

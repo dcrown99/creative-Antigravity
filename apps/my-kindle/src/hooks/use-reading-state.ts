@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// 蝙句ｮ夂ｾｩ
-export type ReadingDirection = 'ltr' | 'rtl'; // ltr: 蟾ｦ髢九″(蟆剰ｪｬ遲・, rtl: 蜿ｳ髢九″(貍ｫ逕ｻ)
-export type ViewMode = 'single' | 'spread';   // single: 1繝壹・繧ｸ, spread: 隕矩幕縺・
+// 定義
+export type ReadingDirection = 'ltr' | 'rtl'; // ltr: 左開き(小説等), rtl: 右開き(漫画)
+export type ViewMode = 'single' | 'spread';   // single: 1ページ, spread: 見開き
 
 interface ReadingProgress {
   lastReadIndex: number;
@@ -27,25 +27,25 @@ export function useReadingState(bookId: string) {
     fitMode: 'contain', // 繝・ヵ繧ｩ繝ｫ繝医・縲悟・菴薙ｒ陦ｨ遉ｺ縲・
   });
 
-  // --- 騾ｲ謐・(Progress) ---
+  // --- 進捗 (Progress) ---
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // 蛻晄悄繝ｭ繝ｼ繝会ｼ夊ｨｭ螳壹→騾ｲ謐励ｒ蠕ｩ蜈・
+  // 初期ロード：設定と進捗を復元
   useEffect(() => {
     try {
-      // 險ｭ螳壹・隱ｭ縺ｿ霎ｼ縺ｿ
+      // 設定の読み込み
       const savedSettings = localStorage.getItem(SETTINGS_KEY);
       if (savedSettings) {
-        setSettings({ ...settings, ...JSON.parse(savedSettings) }); // 譌｢蟄倩ｨｭ螳・+ 譁ｰ隕城・岼縺ｮ繝槭・繧ｸ
+        setSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) })); // 既存設定 + 新規項目のマージ
       } else {
-        // 蛻晏屓縺ｧPC/繧ｿ繝悶Ξ繝・ヨ縺ｮ繧医≧縺ｪ讓ｪ髟ｷ逕ｻ髱｢縺ｪ繧芽ｦ矩幕縺阪ｒ繝・ヵ繧ｩ繝ｫ繝医↓縺吶ｋ蛻､螳壹ｒ蜈･繧後※繧り憶縺・
+        // 初回でPC/タブレットのような横長画面なら見開きをデフォルトにする判定を入れても良い
         if (typeof window !== 'undefined' && window.innerWidth > window.innerHeight) {
           setSettings(prev => ({ ...prev, viewMode: 'spread' }));
         }
       }
 
-      // 騾ｲ謐励・隱ｭ縺ｿ霎ｼ縺ｿ
+      // 進捗の読み込み
       const savedProgress = localStorage.getItem(`${STORAGE_KEY_PREFIX}${bookId}`);
       if (savedProgress) {
         const progress: ReadingProgress = JSON.parse(savedProgress);
@@ -58,7 +58,7 @@ export function useReadingState(bookId: string) {
     }
   }, [bookId]);
 
-  // 騾ｲ謐励・菫晏ｭ・
+  // 進捗の保存
   const saveProgress = useCallback((index: number, total: number) => {
     setCurrentIndex(index);
     try {
@@ -73,7 +73,7 @@ export function useReadingState(bookId: string) {
     }
   }, [bookId]);
 
-  // 險ｭ螳壹・菫晏ｭ・
+  // 設定の保存
   const saveSettings = useCallback((newSettings: Partial<ViewerSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };

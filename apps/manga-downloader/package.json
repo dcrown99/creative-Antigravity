@@ -1,0 +1,8 @@
+{
+    "name": "manga-downloader",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "lint": "node -e \"try { require('child_process').execSync(process.platform === 'win32' ? '.\\\\\\\\.venv\\\\\\\\Scripts\\\\\\\\ruff.exe check .' : './.venv/bin/ruff check .', {stdio: 'inherit'}); } catch (e) { process.exit(e.status || 1); }\""
+    }
+}

@@ -10,16 +10,20 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
+    "lint:py": "pwsh ./scripts/lint_python.ps1",
     "clean": "turbo clean && rimraf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "db:studio": "turbo run db:studio",
     "db:push": "turbo run db:push",
-    "check-types": "turbo run type-check"
+    "check-types": "turbo run type-check",
+    "prepare": "husky install"
   },
   "devDependencies": {
-    "turbo": "latest",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
-    "rimraf": "^6.0.0"
+    "rimraf": "^6.0.0",
+    "turbo": "latest"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -29,10 +33,42 @@
   "pnpm": {
     "overrides": {
       "next": "15.0.3",
-      "react": "19.0.0-rc-66855b96-20241106",
-      "react-dom": "19.0.0-rc-66855b96-20241106",
-      "@types/react": "npm:types-react@19.0.0-rc.1",
-      "@types/react-dom": "npm:types-react-dom@19.0.0-rc.1"
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0",
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0"
     }
+  },
+  "lint-staged": {
+    "apps/money-master/**/*.{ts,tsx}": [
+      "pnpm --filter money-master exec eslint --fix"
+    ],
+    "apps/auto-clipper-web/**/*.{ts,tsx}": [
+      "pnpm --filter auto-clipper-web exec eslint --fix"
+    ],
+    "apps/my-kindle/**/*.{ts,tsx}": [
+      "pnpm --filter my-kindle exec eslint --fix"
+    ],
+    "apps/ai-talker/**/*.{ts,tsx}": [
+      "pnpm --filter ai-talker exec eslint --fix"
+    ],
+    "packages/ui/**/*.{ts,tsx}": [
+      "pnpm --filter @repo/ui exec eslint --fix"
+    ],
+    "apps/auto-clipper-api/**/*.py": [
+      "apps/auto-clipper-api/venv/Scripts/ruff check --fix"
+    ],
+    "apps/market-watcher/**/*.py": [
+      "apps/market-watcher/venv/Scripts/ruff check --fix"
+    ],
+    "apps/manga-downloader/**/*.py": [
+      "apps/manga-downloader/venv/Scripts/ruff check --fix"
+    ],
+    "apps/news-reader/**/*.{ts,tsx}": [
+      "pnpm --filter news-reader exec eslint --fix"
+    ],
+    "apps/quant-brain/**/*.py": [
+      "apps/quant-brain/venv/Scripts/ruff check --fix"
+    ]
   }
 }

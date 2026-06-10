@@ -47,6 +47,18 @@ export { Badge, badgeVariants } from "./components/ui/badge";
 export { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar";
 export { Checkbox } from "./components/ui/checkbox";
 export {
+    Sheet,
+    SheetPortal,
+    SheetOverlay,
+    SheetTrigger,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetFooter,
+    SheetTitle,
+    SheetDescription,
+} from "./components/ui/sheet";
+export {
     Select,
     SelectGroup,
     SelectValue,
@@ -59,22 +71,6 @@ export {
     SelectScrollDownButton,
 } from "./components/ui/select";
 export { Separator } from "./components/ui/separator";
-export { Switch } from "./components/ui/switch";
-export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";
-export { Progress } from "./components/ui/progress";
-export { Popover, PopoverTrigger, PopoverContent } from "./components/ui/popover";
-export {
-    Sheet,
-    SheetPortal,
-    SheetOverlay,
-    SheetTrigger,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetFooter,
-    SheetTitle,
-    SheetDescription,
-} from "./components/ui/sheet";
 export { Toaster } from "./components/ui/sonner";
 export {
     Table,
@@ -115,3 +111,32 @@ export {
 // Theme
 export { ThemeProvider } from "./components/theme-provider";
 export { ModeToggle } from "./components/mode-toggle";
+export {
+    Command,
+    CommandDialog,
+    CommandInput,
+    CommandList,
+    CommandEmpty,
+    CommandGroup,
+    CommandItem,
+    CommandShortcut,
+    CommandSeparator,
+} from "./components/ui/command";
+export {
+    Tabs,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+} from "./components/ui/tabs";
+export {
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+    PopoverAnchor,
+} from "./components/ui/popover";
+export { Switch } from "./components/ui/switch";
+export { Progress } from "./components/ui/progress";
+
+// Charts
+export { WhaleSonarChart } from "./components/WhaleSonarChart";
+

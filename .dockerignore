@@ -12,10 +12,15 @@ venv
 
 # Build outputs
 .next
+**/.next
 .turbo
+**/.turbo
 dist
+**/dist
 out
+**/out
 build
+**/build
 
 # Python
 __pycache__

@@ -10,6 +10,7 @@
 export interface CachedPrice {
     price: number;
     timestamp: number;
+    currency: string;
     dividendRate?: number;
     dividendYield?: number;
     nextDividendDate?: string;
@@ -19,9 +20,10 @@ export interface CachedPrice {
 export const priceCache = new Map<string, CachedPrice>();
 
 
-// Cache TTL in milliseconds (default: 15 minutes)
-const DEFAULT_TTL_MINUTES = 15;
-const TTL_MS = DEFAULT_TTL_MINUTES * 60 * 1000;
+// Cache TTL in milliseconds (default: 60 minutes to match update frequency)
+const DEFAULT_TTL_MINUTES = 60;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _TTL_MS = DEFAULT_TTL_MINUTES * 60 * 1000;
 
 /**
  * Check if a cached entry is still valid
@@ -73,7 +75,6 @@ export function clearCache(): void {
  * Get cache statistics for monitoring
  */
 export function getCacheStats() {
-    const now = Date.now();
     let validEntries = 0;
     let expiredEntries = 0;
 

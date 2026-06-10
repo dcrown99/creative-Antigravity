@@ -1,0 +1,35 @@
+# Session Breakout Strategy - Asian Range to London Open
+
+## Academic Foundation
+- Gao, Han, Li, Zhou (2018) "Market Intraday Momentum", Journal of Financial Economics 129(2), 394-414
+- Significant positive relationship between early and late half-hour returns within a trading day
+- Effect is more pronounced during financial crises and when market concentration due to trading hours is a factor
+- Intraday momentum is influenced by risk aversion among liquidity providers regarding overnight holdings
+
+## Alpha Source Analysis
+- The London session accounts for 38% of global FX turnover (UK alone)
+- Asian session: low liquidity, narrow range consolidation (00:00-07:59 UTC)
+- London open: massive institutional order flow influx creating directional momentum
+- The transition from low-volatility Asian to high-volatility London creates predictable breakouts
+- Institutional delta hedging and portfolio rebalancing at session opens
+
+## Strategy Rules (from MQL5 community and practitioners)
+- Asian Range: Track high/low from 00:00 to 07:59 UTC (server time)
+- Entry Window: London Open 08:00-08:05 UTC
+- Entry Signal: 5-minute candle closes outside Asian session high/low
+- Volume Filter: Breakout candle volume > 2x the 20-period average volume
+- Risk: 0.5% per trade
+- Stop Loss: 20 pips beyond breakout level
+- Take Profit: 60 pips (3:1 RR)
+
+## Backtest Evidence (from practitioners)
+- GBP/JPY: 80% annual return, 15% max DD, 31.5% WR, 4:1 RR
+- London breakout: 7.47% return in 10 months, Sharpe 1.84, 49% WR
+- Asian gold breakout: PF 7.294 over 30 days (70.59% WR)
+- London open: 71% WR with 1:1 RR reported
+
+## Why This Edge Persists (Structural)
+1. UK/London institutional flow is structural - won't disappear
+2. Asian session is fundamentally low-liquidity due to timezone (structural)
+3. The volatility transition is driven by real institutional order flow, not patterns
+4. Retail traders can exploit this because HFT doesn't dominate session-level timeframes

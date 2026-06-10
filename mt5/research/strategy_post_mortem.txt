@@ -1,0 +1,69 @@
+# MT5 Strategy Post-Mortem (2026-02-17)
+
+## 1. Liquidity Raid (Pure Price Action)
+- **Logic:** 20-bar High/Low Sweep + Close Reversal.
+- **Result:** PF 0.40 (Unprofitable).
+- **Conclusion:** Pure candlestick patterns without fundamental context (Alpha) are noise in modern markets. Institutional algorithms likely hunt these exact patterns. **REJECTED.**
+
+## 2. Nakane Buy (9:00 AM JST)
+- **Logic:** Buy at 9:00 JST targeting 9:55 JST (Gotobi/Trend filters applied).
+- **Result:** PF 0.43 (Unprofitable).
+- **Conclusion:** The classic "9:00 Buy" anomaly has decayed or shifted. Front-running by AI/Algos has likely eroded this specific time window. **REJECTED.**
+
+## 3. Hybrid Liquidity Raid (SMC + Stats)
+- **Logic:** Objective Swing (3-Bar Fractal) + RSI Filter + SMA200 Trend Filter.
+- **Result:** PF 0.93 (Best Case).
+- **Conclusion:** Even with statistical filters, the core entry logic (Sweep) lacked a predictive edge. Adding filters only reduced trade count, not the expectancy. **REJECTED.**
+
+## 4. Month-End Forex Rebalancing
+- **Logic:** Equity-FX hedge rebalancing at London Fix on last trading day.
+- **Alpha Source:** Grade B - Market Mechanics (Equity-FX Correlation).
+- **Result:** PF 0.19 (MT5 Backtest). Python verification showed promise (Daily PF ~2.5) but 1H precision destroyed edge.
+- **Conclusion:** Daily timeframe effect exists but cannot be captured at intraday precision. Timing uncertainty and spread/slippage consume the edge. **REJECTED.**
+
+## 5. London Fix Post-Fix Mean Reversion (2026-02-19)
+- **Logic:** Measure pre-fix move (15:00-16:00 GMT), fade at 16:05 GMT, exit at 17:00 or SL/TP.
+- **Alpha Source:** Grade B - Institutional flow reversal after WMR benchmark fixing.
+- **Result:** PF 0.45 / WR 50% / 386 trades / -12.4% return (optimized over 60d 1H data).
+- **Conclusion:** Post-fix reversal hypothesis not supported by data. Win rate is 50% (coin flip) and losses are larger than wins. The "mean reversion after fix" pattern may be too noisy on USDJPY, or the edge has been arbitraged away by HFT. **REJECTED.**
+- **教訓:** ロンドンフィックスの影響は存在するが、リテールレベルのデータ精度(1H)では捕捉困難。Tick/1Mデータが必要か。
+- **Status:** REJECTED
+
+## 6. Trend Following Momentum (Time-Series Momentum) (2026-02-19)
+- **Logic:** N-period return momentum (lookback=10) + ATR-based SL/TP (asymmetric 2:3 R:R).
+- **Alpha Source:** Grade B - Academic (Moskowitz, Ooi, Pedersen 2012 "Time Series Momentum").
+- **Result:** PF 1.80 / WR 58% / 81 trades / DD -2.5% / Return +8.5% (60d 1H USDJPY).
+- **Best Params:** lookback=10, ATR(10), SL=2.0x ATR, TP=3.0x ATR, trend_filter=off.
+- **Conclusion:** Strong results. Behavioral biases and slow info diffusion create structural momentum.
+- **教訓:** テクニカル指標ベースだが、アルファの根拠は「行動バイアス+情報伝播の遅延」という構造的要因。
+- **Status:** ✅ APPROVED → mt5-full-cycle Phase 2 へ
+## 1. EURJPY ロンフィク〜東京仲値アノマリー (2026/02/22)
+- **ロジック:** 火〜金のJST 01:00 (ロンドンフィックス後) にロングし、同日 09:53 (東京仲値直前) にエグジット
+- **アルファソース:** Grade B: 市場メカニクス/需給アノマリー (ロンフィクからの反転と仲値に向けた実需買いへの期待)
+- **結果:** PF 0.90 / WR 47.29% (期間: 2024/10/15〜2026/02/21, M1データ, 取引回数: 277回)
+- **結論:** 却下。期待値が明確にマイナスであり、スプレッド(1.0pips想定)をカバーできるエッジが存在しない。
+- **教訓:** X(Twitter) 等で「シミュレーションでプラス」と謳われているシンプルな時間帯アノマリーは、厳密なスプレッド/手数料込みのテストではマイナスになることが多い。安易な時間帯指定アノマリーは優位性が薄い可能性が高い。
+- **ステータス:** REJECTED
+
+## 8. Options Expiry Gamma Pinning (Round Number Approximation) (2026-02-26)
+- **Logic:** USDJPY M5. 12:00-14:59 UTC (pre-NY Cut). Buy/Sell towards nearest .00 or .50 strike when price is within 15 pips and ATR is low. Exit on strike hit or 15:00 UTC.
+- **Alpha Source:** Grade A - Institutional delta hedging (Stock Pinning / Magnetic Effect).
+- **Result:** PF 0.89 / WR 63.6% (best), Loop 2 (tighter distance): PF 0.87 / WR 68.2%.
+- **Conclusion:** The win rate is high (>68%), proving the magnetic effect exists. However, the exact distance (pips) captured is too small relative to the spread structure (1.0 pips round-trip) and required stop-loss. Gamma pinning is a real phenomenon but mathematically untradeable as a directional retail strategy due to insufficient Risk-Reward. **REJECTED.**
+- **���P:** �w�p�I�ɏؖ����ꂽ�G�b�W�iGrade A�j�ł����Ă��A���e�[�����i�X�v���b�h�Ǝ萔���j�ł�RR��������Ȃ����EA���ł��Ȃ��B�s���j���O�́u�����v���u�{���ቺ�v�G�b�W�Ȃ̂ŁA�I�v�V�����̔���i�X�g���h���E�V���[�g���j�헪�ł̂ݎ��v���\�B�X�|�b�gFX�̕������g���[�h�ɂ͕s�����B
+- **Status:** REJECTED
+
+
+
+=== 2026-02-27: PairZScore (Statistical Pair Trading AUDNZD) ===
+- Result: PASS
+- PF: 6.38 (MT5) / 6.66 (Python)
+- Notes: Rollover spread problem resolved by evaluating at 01:00 (instead of 00:00). CTrade handles filling mode errors (REJECT:10030) automatically. Ticket: TICKET_20260227_1057.md.
+
+## 9. Session Breakout (Asian Range -> London Open) (2026-03-05)
+- **Logic:** Track Asian session range (00:00-06:59 UTC High/Low). Enter London open (07:00-09:00 UTC) on breakout above/below range with confirmation buffer. ATR-based SL, time-based exit at 16:00-18:00 UTC.
+- **Alpha Source:** Grade B: Market Mechanics - Institutional order flow concentration at London session open. Gao et al. (2018) "Market Intraday Momentum" evidence. UK accounts for 38% of global FX turnover.
+- **Result:** v1 60d PF=2.28/WR=42.9%/7trades (sample bias). v2 2y-opt PF=1.20/WR=31.1%/74trades. v3 2y-opt PF=1.07/WR=44.7%/103trades.
+- **Conclusion:** Short-period PF inflated by small sample. On 2-year data across 3 versions and 2 improvement loops, PF never exceeded 1.20. False breakouts dominate — the Asian range breakout edge is too small to overcome spread+SL costs in FX. The structural alpha of London open momentum exists but is insufficient for a pure range-breakout approach.
+- **Lesson:** Session-based breakout strategies suffer from high false-breakout rate. The edge from institutional flow at London open is real but diffuse — it doesn't manifest as clean range breakouts. Future session-based strategies should focus on momentum continuation (after breakout confirmed) rather than anticipating the breakout itself. Consider combining with order flow data or session volume profile for better signal quality.
+- **Status:** REJECTED

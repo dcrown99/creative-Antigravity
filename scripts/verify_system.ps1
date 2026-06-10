@@ -22,8 +22,10 @@ $Services = @(
     @{ Name = "Money Master (Web)"; Url = "http://localhost:3001"; Type = "Web" },
     @{ Name = "My Kindle (Web)"; Url = "http://localhost:3002"; Type = "Web" },
     @{ Name = "Auto Clipper (Web)"; Url = "http://localhost:3003"; Type = "Web" },
+    @{ Name = "AI Talker (Web)"; Url = "http://localhost:3004"; Type = "Web" },
     @{ Name = "Auto Clipper (API)"; Url = "http://localhost:8000/docs"; Type = "API" },
     @{ Name = "Market Watcher (API)"; Url = "http://localhost:8001/docs"; Type = "API" },
+    @{ Name = "Quant Brain (API)"; Url = "http://localhost:8002/"; Type = "API" },
     @{ Name = "Voicevox Engine"; Url = "http://localhost:50021/docs"; Type = "API" },
     @{ Name = "Dozzle (Logs)"; Url = "http://localhost:8888"; Type = "Web" }
 )

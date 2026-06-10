@@ -1,0 +1,311 @@
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm.
+PASS src/lib/__tests__/csv-parsers.test.ts
+PASS src/services/__tests__/transaction.service.test.ts
+PASS src/lib/__tests__/portfolio-logic.test.ts
+FAIL src/services/__tests__/system.service.test.ts
+  笳・SystemService 窶ｺ saveAnalysisLog 窶ｺ should save analysis log
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+      Object {
+        "data": Object {
+          "date": "2024-01-01",
+          "script": "Script",
+    -     "sources": "[\"source1\"]",
+    +     "sources": "\"[\\\"source1\\\"]\"",
+          "summary": "Summary",
+          "title": "Test Analysis",
+        },
+      },
+
+    Number of calls: 1
+
+      61 |             const result = await SystemService.saveAnalysisLog(logData);
+      62 |
+    > 63 |             expect(prisma.analysisLog.create).toHaveBeenCalledWith({
+         |                                               ^
+      64 |                 data: {
+      65 |                     ...logData,
+      66 |                 },
+
+      at Object.toHaveBeenCalledWith (src/services/__tests__/system.service.test.ts:63:47)
+
+PASS src/lib/__tests__/stock-price-cache.test.ts
+PASS src/services/__tests__/dividend.service.test.ts
+PASS src/lib/__tests__/utils.test.ts
+PASS src/lib/__tests__/backup-settings.test.ts
+PASS src/lib/__tests__/calculator.test.ts
+  笳・Console
+
+    console.warn
+      Invalid value for Decimal conversion: invalid
+
+      12 |       return new Decimal(value);
+      13 |     } catch {
+    > 14 |       console.warn(`Invalid value for Decimal conversion: ${value}`);
+         |               ^
+      15 |       return new Decimal(0);
+      16 |     }
+      17 |   },
+
+      at Object.warn [as toDecimal] (src/lib/calculator.ts:14:15)
+      at Object.toDecimal (src/lib/__tests__/calculator.test.ts:28:39)
+
+PASS src/lib/__tests__/classifier.test.ts
+PASS src/services/__tests__/analytics.service.test.ts
+  笳・Console
+
+    console.warn
+      Failed to parse analysis sources SyntaxError: Unexpected token 'i', "invalid-json" is not valid JSON
+          at JSON.parse (<anonymous>)
+          at Object.parse (C:\Users\koume\Downloads\code\apps\money-master\src\services\analytics.service.ts:18:38)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at Object.<anonymous> (C:\Users\koume\Downloads\code\apps\money-master\src\services\__tests__\analytics.service.test.ts:53:28)
+
+      18 |                 parsedSources = JSON.parse(log.sources);
+      19 |             } catch (e) {
+    > 20 |                 console.warn("Failed to parse analysis sources", e);
+         |                         ^
+      21 |                 parsedSources = [];
+      22 |             }
+      23 |         } else {
+
+      at Object.warn (src/services/analytics.service.ts:20:25)
+      at Object.<anonymous> (src/services/__tests__/analytics.service.test.ts:53:28)
+
+    console.log
+      History for 2026-02-20 already exists. Skipping recordDailyHistory.
+
+      at Object.log (src/services/analytics.service.ts:69:25)
+
+    console.log
+      Recorded history for 2026-02-20: Value=160000, Cost=145000
+
+      at Object.log (src/services/analytics.service.ts:104:17)
+
+FAIL src/services/__tests__/export.service.test.ts
+  笳・ExportService 窶ｺ generateMarkdownExport 窶ｺ should translate account types to Japanese
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "NISA謌宣聞"
+    Received string:    "# 菫晄怏雉・肇荳隕ｧ
+    繧ｨ繧ｯ繧ｹ繝昴・繝域律: 2026-02-20ﾂｷ
+    ## 繧ｵ繝槭Μ繝ｼ
+    | 鬆・岼 | 驥鷹｡・|
+    |:---|---:|
+    | 邱剰ｳ・肇 | ・･1,568,049 |
+    | 邱上さ繧ｹ繝・| ・･1,485,279 |
+    | 邱乗錐逶・| +・･82,770 (+5.6%) |ﾂｷ
+    ## 譌･譛ｬ譬ｪ (1驫俶氛)ﾂｷ
+    ### 繝医Κ繧ｿ閾ｪ蜍戊ｻ・(7203.T)
+    - 蜿｣蠎ｧ: TOKUTEI
+    - 菫晄怏: 100譬ｪ
+    - 蜊倅ｾ｡: ・･2,500 竊・・･2,850
+    - 隧穂ｾ｡鬘・ ・･285,000 | 謳咲寢: +・･35,000 (+14.0%)
+    - 蟷ｴ髢馴・蠖・ ・･7,500 (蛻ｩ蝗槭ｊ 2.6%)ﾂｷ
+    ## 邀ｳ蝗ｽ譬ｪ (1驫俶氛)ﾂｷ
+    ### Apple Inc (AAPL)
+    - 蜿｣蠎ｧ: NISA_GROWTH
+    - 菫晄怏: 10譬ｪ
+    - 蜊倅ｾ｡: $150 竊・$180
+    - 隧穂ｾ｡鬘・ ・･270,000 | 謳咲寢: +・･45,000 (+20.0%)
+    - 蟷ｴ髢馴・蠖・ ・･1,440 (蛻ｩ蝗槭ｊ 0.5%)ﾂｷ
+    ## 謚戊ｳ・ｿ｡險・(1驫俶氛)ﾂｷ
+    ### OneDC S&P500 IDX
+    - 蜿｣蠎ｧ: iDeCo
+    - 菫晄怏: 10,000蜿｣
+    - 蜊倅ｾ｡: ・･10,279 竊・・･13,049
+    - 隧穂ｾ｡鬘・ ・･13,049 | 謳咲寢: +・･2,770 (+26.9%)ﾂｷ
+    ## 驫陦・(1驫俶氛)ﾂｷ
+    ### 譎ｮ騾夐宣≡
+    - 谿矩ｫ・ ・･1,000,000
+    "
+
+      115 |
+      116 |             expect(result).toContain('TOKUTEI');
+    > 117 |             expect(result).toContain('NISA謌宣聞');
+          |                            ^
+      118 |             expect(result).toContain('iDeCo');
+      119 |         });
+      120 |
+
+      at Object.toContain (src/services/__tests__/export.service.test.ts:117:28)
+
+PASS src/lib/__tests__/actions.test.ts
+  笳・Console
+
+    console.error
+      Failed to add asset: Error: Database error
+          at Object.<anonymous> (C:\Users\koume\Downloads\code\apps\money-master\src\lib\__tests__\actions.test.ts:63:57)
+          at Promise.then.completed (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\utils.js:231:10)
+          at _callCircusTest (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:316:40)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at _runTest (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:252:3)
+          at _runTestsForDescribeBlock (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:126:9)
+          at _runTestsForDescribeBlock (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:121:9)
+          at _runTestsForDescribeBlock (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:121:9)
+          at run (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:71:3)
+          at runAndTransformResultsToJestFormat (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapterInit.js:122:21)
+          at jestAdapter (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapter.js:79:19)
+          at runTestInternal (C:\Users\koume\Downloads\code\node_modules\jest-runner\build\runTest.js:367:16)
+          at runTest (C:\Users\koume\Downloads\code\node_modules\jest-runner\build\runTest.js:444:34)
+          at Object.worker (C:\Users\koume\Downloads\code\node_modules\jest-runner\build\testWorker.js:106:12)
+
+      50 |         return { success: true };
+      51 |     } catch (error) {
+    > 52 |         console.error('Failed to add asset:', error);
+         |                 ^
+      53 |         return { success: false, error: 'Failed to add asset' };
+      54 |     }
+      55 | }
+
+      at error (src/lib/actions.ts:52:17)
+      at Object.<anonymous> (src/lib/__tests__/actions.test.ts:65:28)
+
+    console.error
+      Failed to add transaction: Error: Database error
+          at Object.<anonymous> (C:\Users\koume\Downloads\code\apps\money-master\src\lib\__tests__\actions.test.ts:137:17)
+          at Promise.then.completed (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\utils.js:231:10)
+          at _callCircusTest (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:316:40)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at _runTest (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:252:3)
+          at _runTestsForDescribeBlock (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:126:9)
+          at _runTestsForDescribeBlock (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:121:9)
+          at _runTestsForDescribeBlock (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:121:9)
+          at run (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\run.js:71:3)
+          at runAndTransformResultsToJestFormat (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapterInit.js:122:21)
+          at jestAdapter (C:\Users\koume\Downloads\code\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapter.js:79:19)
+          at runTestInternal (C:\Users\koume\Downloads\code\node_modules\jest-runner\build\runTest.js:367:16)
+          at runTest (C:\Users\koume\Downloads\code\node_modules\jest-runner\build\runTest.js:444:34)
+          at Object.worker (C:\Users\koume\Downloads\code\node_modules\jest-runner\build\testWorker.js:106:12)
+
+       95 |         return { success: true };
+       96 |     } catch (error) {
+    >  97 |         console.error('Failed to add transaction:', error);
+          |                 ^
+       98 |         return { success: false, error: 'Failed to add transaction' };
+       99 |     }
+      100 | }
+
+      at error (src/lib/actions.ts:97:17)
+      at Object.<anonymous> (src/lib/__tests__/actions.test.ts:140:28)
+
+    console.log
+      DEBUG: Market Watcher Response: {
+        "title": "Market Analysis",
+        "summary": "Test summary",
+        "script": "Test script",
+        "sources": []
+      }
+
+      at log (src/lib/actions.ts:461:17)
+
+    console.error
+      Failed to trigger analysis: Error: Market Watcher API failed: 500 Internal Server Error
+          at triggerAnalysisAction (C:\Users\koume\Downloads\code\apps\money-master\src\lib\actions.ts:457:19)
+          at Object.<anonymous> (C:\Users\koume\Downloads\code\apps\money-master\src\lib\__tests__\actions.test.ts:238:28)
+
+      481 |         return { success: true, data: result };
+      482 |     } catch (error) {
+    > 483 |         console.error('Failed to trigger analysis:', error);
+          |                 ^
+      484 |         return { success: false, error: String(error) };
+      485 |     }
+      486 | }
+
+      at error (src/lib/actions.ts:483:17)
+      at Object.<anonymous> (src/lib/__tests__/actions.test.ts:238:28)
+
+PASS src/services/__tests__/asset.service.test.ts
+  笳・Console
+
+    console.log
+      Please consider completing the survey at https://bit.ly/yahoo-finance-api-feedback if you haven't already; for more info see https://github.com/gadicc/yahoo-finance2/issues/764#issuecomment-2056623851.  This will only be shown once, but you can suppress this message in future with `new YahooFinance({ suppressNotices: ['yahooSurvey'] })`.
+
+      at Object.info (../../node_modules/yahoo-finance2/script/src/lib/options/logger.js:7:32)
+          at Array.map (<anonymous>)
+
+    console.error
+      Stock price fetch error for AAPL: TypeError: fetch is not a function
+          at _getCrumb (C:\Users\koume\Downloads\code\node_modules\yahoo-finance2\script\src\lib\getCrumb.js:69:28)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at YahooFinance.yahooFinanceFetch [as _fetch] (C:\Users\koume\Downloads\code\node_modules\yahoo-finance2\script\src\lib\yahooFinanceFetch.js:63:23)
+          at YahooFinance.moduleExec [as _moduleExec] (C:\Users\koume\Downloads\code\node_modules\yahoo-finance2\script\src\lib\moduleExec.js:121:18)
+          at withRetry (C:\Users\koume\Downloads\code\apps\money-master\src\lib\rate-limiter.ts:24:14)
+          at getStockInfo (C:\Users\koume\Downloads\code\apps\money-master\src\services\stock.service.ts:120:24)
+          at updateSingleAssetPrice (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:242:23)
+          at worker (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:219:23)
+          at async Promise.all (index 0)
+          at runWithConcurrency (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:228:3)
+          at Object.updateAllAssetPrices (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:298:19)
+          at Object.<anonymous> (C:\Users\koume\Downloads\code\apps\money-master\src\services\__tests__\asset.service.test.ts:204:28)
+
+      159 |
+      160 |     } catch (error) {
+    > 161 |         console.error(`Stock price fetch error for ${symbol}:`, error);
+          |                 ^
+      162 |         return {
+      163 |             symbol,
+      164 |             name: symbol,
+
+      at error (src/services/stock.service.ts:161:17)
+      at updateSingleAssetPrice (src/services/asset.service.ts:242:23)
+      at worker (src/services/asset.service.ts:219:23)
+          at async Promise.all (index 0)
+      at runWithConcurrency (src/services/asset.service.ts:228:3)
+      at Object.updateAllAssetPrices (src/services/asset.service.ts:298:19)
+      at Object.<anonymous> (src/services/__tests__/asset.service.test.ts:204:28)
+
+    console.log
+      Please consider completing the survey at https://bit.ly/yahoo-finance-api-feedback if you haven't already; for more info see https://github.com/gadicc/yahoo-finance2/issues/764#issuecomment-2056623851.  This will only be shown once, but you can suppress this message in future with `new YahooFinance({ suppressNotices: ['yahooSurvey'] })`.
+
+      at Object.info (../../node_modules/yahoo-finance2/script/src/lib/options/logger.js:7:32)
+          at async Promise.all (index 1)
+
+    console.error
+      Stock price fetch error for GOOGL: TypeError: fetch is not a function
+          at _getCrumb (C:\Users\koume\Downloads\code\node_modules\yahoo-finance2\script\src\lib\getCrumb.js:69:28)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at YahooFinance.yahooFinanceFetch [as _fetch] (C:\Users\koume\Downloads\code\node_modules\yahoo-finance2\script\src\lib\yahooFinanceFetch.js:63:23)
+          at YahooFinance.moduleExec [as _moduleExec] (C:\Users\koume\Downloads\code\node_modules\yahoo-finance2\script\src\lib\moduleExec.js:121:18)
+          at withRetry (C:\Users\koume\Downloads\code\apps\money-master\src\lib\rate-limiter.ts:24:14)
+          at getStockInfo (C:\Users\koume\Downloads\code\apps\money-master\src\services\stock.service.ts:120:24)
+          at updateSingleAssetPrice (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:242:23)
+          at worker (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:219:23)
+          at async Promise.all (index 0)
+          at runWithConcurrency (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:228:3)
+          at Object.updateAllAssetPrices (C:\Users\koume\Downloads\code\apps\money-master\src\services\asset.service.ts:298:19)
+          at Object.<anonymous> (C:\Users\koume\Downloads\code\apps\money-master\src\services\__tests__\asset.service.test.ts:204:28)
+
+      159 |
+      160 |     } catch (error) {
+    > 161 |         console.error(`Stock price fetch error for ${symbol}:`, error);
+          |                 ^
+      162 |         return {
+      163 |             symbol,
+      164 |             name: symbol,
+
+      at error (src/services/stock.service.ts:161:17)
+      at updateSingleAssetPrice (src/services/asset.service.ts:242:23)
+      at worker (src/services/asset.service.ts:219:23)
+          at async Promise.all (index 1)
+      at runWithConcurrency (src/services/asset.service.ts:228:3)
+      at Object.updateAllAssetPrices (src/services/asset.service.ts:298:19)
+      at Object.<anonymous> (src/services/__tests__/asset.service.test.ts:204:28)
+
+
+Test Suites: 2 failed, 1 skipped, 12 passed, 14 of 15 total
+Tests:       2 failed, 7 skipped, 157 passed, 166 total
+Snapshots:   0 total
+Time:        4.539 s
+Ran all test suites.

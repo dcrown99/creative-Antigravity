@@ -16,24 +16,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Checkbox,
-  Badge
+  Checkbox
 } from "@repo/ui";
 import { addDividendsBulk } from "@/lib/actions";
 import { Asset } from "@/types";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface AutoDividendDialogProps {
   isOpen: boolean;
   onClose: () => void;
   assets: Asset[];
+  usdJpy: number;
 }
 
 interface DividendPrediction {
   assetId: string;
   assetName: string;
   ticker: string | null;
-  currency: 'JPY' | 'USD';
+  currency: 'JPY';
   quantity: number;
   currentPrice: number;
   dividendYield: number;
@@ -41,48 +41,53 @@ interface DividendPrediction {
   selected: boolean;
 }
 
-export function AutoDividendDialog({ isOpen, onClose, assets }: AutoDividendDialogProps) {
+export function AutoDividendDialog({ isOpen, onClose, assets, usdJpy }: AutoDividendDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dividendDate, setDividendDate] = useState(new Date().toISOString().split('T')[0]);
-
-  // 配当予測の計算
   const [predictions, setPredictions] = useState<DividendPrediction[]>([]);
+  const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
 
   useMemo(() => {
     const calculated = assets
       .filter(asset => {
-        // 投資資産のみ（JP_STOCK, US_STOCK, ETF, TRUST）
         const isInvestment = ['JP_STOCK', 'US_STOCK', 'ETF', 'TRUST'].includes(asset.type);
-        // 配当利回りが設定されている
         const hasDividendYield = (asset.dividendYield ?? 0) > 0;
-        // 数量と現在価格が設定されている
         const hasQuantityAndPrice = (asset.quantity ?? 0) > 0 && (asset.currentPrice ?? 0) > 0;
-
         return isInvestment && hasDividendYield && hasQuantityAndPrice;
       })
       .map(asset => {
         const quantity = asset.quantity!;
-        const currentPrice = asset.currentPrice!;
+        let currentPrice = asset.currentPrice!;
         const dividendYield = asset.dividendYield!;
 
-        // 予想配当額 = 現在価格 * 数量 * 配当利回り(%)
-        const predictedAmount = currentPrice * quantity * (dividendYield / 100);
+        if (asset.currency === 'USD') {
+          currentPrice = currentPrice * usdJpy;
+        }
+
+        // 予想配当額 = 現在価格 * 数量 * 配当利回り
+        const predictedAmount = Math.floor(currentPrice * quantity * dividendYield);
 
         return {
           assetId: asset.id,
           assetName: asset.name,
           ticker: asset.ticker ?? null,
-          currency: asset.currency,
+          currency: 'JPY' as const,
           quantity,
           currentPrice,
           dividendYield,
           predictedAmount,
-          selected: true, // デフォルトで選択状態
+          selected: false, // Default unchecked
         };
       });
 
     setPredictions(calculated);
-  }, [assets]);
+    // Initialize edited amounts
+    const initialAmounts: Record<string, number> = {};
+    calculated.forEach(p => {
+      initialAmounts[p.assetId] = p.predictedAmount;
+    });
+    setEditedAmounts(initialAmounts);
+  }, [assets, usdJpy]);
 
   const handleToggleSelection = (assetId: string) => {
     setPredictions(prev =>
@@ -99,13 +104,21 @@ export function AutoDividendDialog({ isOpen, onClose, assets }: AutoDividendDial
     );
   };
 
+  const handleAmountChange = (assetId: string, value: string) => {
+    const numValue = Number(value);
+    setEditedAmounts(prev => ({
+      ...prev,
+      [assetId]: isNaN(numValue) ? 0 : numValue
+    }));
+  };
+
   const handleBulkRegister = async () => {
     const selectedDividends = predictions
       .filter(p => p.selected)
       .map(p => ({
         assetId: p.assetId,
         date: dividendDate,
-        amount: p.predictedAmount,
+        amount: editedAmounts[p.assetId] ?? p.predictedAmount,
         currency: p.currency,
       }));
 
@@ -119,7 +132,7 @@ export function AutoDividendDialog({ isOpen, onClose, assets }: AutoDividendDial
       const result = await addDividendsBulk(selectedDividends);
       if (result.success) {
         onClose();
-        window.location.reload(); // データを再読込
+        window.location.reload();
       } else {
         alert('配当の登録に失敗しました');
       }
@@ -143,14 +156,14 @@ export function AutoDividendDialog({ isOpen, onClose, assets }: AutoDividendDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px]">
+      <DialogContent className="sm:max-w-[1000px]">
         <DialogHeader>
           <DialogTitle>配当自動登録</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            配当利回りが設定されている資産から予想配当を計算しました。登録する配当を選択してください。
+            配当利回りが設定されている資産から予想配当を計算しました。登録する配当を選択し、必要に応じて金額を修正してください。
           </p>
 
           <div className="space-y-2">
@@ -183,7 +196,7 @@ export function AutoDividendDialog({ isOpen, onClose, assets }: AutoDividendDial
                     <TableHead className="text-right">現在価格</TableHead>
                     <TableHead className="text-right">利回り</TableHead>
                     <TableHead className="text-right">予想配当額</TableHead>
-                    <TableHead className="text-center">通貨</TableHead>
+                    <TableHead className="w-[150px]">登録額(JPY)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -210,13 +223,19 @@ export function AutoDividendDialog({ isOpen, onClose, assets }: AutoDividendDial
                         {formatCurrency(prediction.currentPrice, prediction.currency)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {prediction.dividendYield.toFixed(2)}%
+                        {(prediction.dividendYield * 100).toFixed(2)}%
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        +{formatCurrency(prediction.predictedAmount, prediction.currency)}
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatCurrency(prediction.predictedAmount, prediction.currency)}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">{prediction.currency}</Badge>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={editedAmounts[prediction.assetId] ?? prediction.predictedAmount}
+                          onChange={(e) => handleAmountChange(prediction.assetId, e.target.value)}
+                          className="text-right h-8"
+                          onClick={(e) => e.stopPropagation()} // Prevent row click if any
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

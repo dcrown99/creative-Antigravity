@@ -1,3 +1,7 @@
+param (
+    [string]$Message = "chore: sync with local changes"
+)
+
 $ErrorActionPreference = "Stop"
 
 Write-Host "🔄 Starting GitHub Sync..." -ForegroundColor Cyan
@@ -13,7 +17,7 @@ git add .
 # Commit
 Write-Host "💾 Committing..." -ForegroundColor Gray
 try {
-    git commit -m "chore: cleanup obsolete files and legacy scripts"
+    git commit -m "$Message"
 } catch {
     Write-Host "⚠️ No changes to commit or commit failed." -ForegroundColor Yellow
 }

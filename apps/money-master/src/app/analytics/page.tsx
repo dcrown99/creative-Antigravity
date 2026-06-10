@@ -1,14 +1,16 @@
 import { getAssetHistory, getAssetAllocation, getPortfolioWithPrices } from "@/lib/actions";
 import { calculateTotalAssets } from "@/lib/portfolio-logic";
-import { AssetHistoryChart } from "@/components/analytics/AssetHistoryChart";
+import { AnalyticsHistoryClient } from "@/components/analytics/AnalyticsHistoryClient";
 import { AssetAllocationChart } from "@/components/analytics/AssetAllocationChart";
 import { PerformanceSummary } from "@/components/analytics/PerformanceSummary";
+import { SectorPerformanceChart } from "@/components/analytics/SectorPerformanceChart";
+import { RebalanceWidget } from "@/components/analytics/RebalanceWidget";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AnalyticsPage() {
   const [history, allocation, { portfolio, usdJpy }] = await Promise.all([
-    getAssetHistory(30),
+    getAssetHistory(30), // Match initialPeriod for consistent initial display
     getAssetAllocation(),
     getPortfolioWithPrices(),
   ]);
@@ -23,9 +25,19 @@ export default async function AnalyticsPage() {
 
       <PerformanceSummary history={history} currentTotalValue={currentTotalValue} />
 
-      <div className="grid gap-6 md:grid-cols-7">
-        <AssetHistoryChart data={history} currentTotalValue={currentTotalValue} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AnalyticsHistoryClient
+          initialData={history}
+          currentTotalValue={currentTotalValue}
+          initialPeriod={30}
+        />
         <AssetAllocationChart data={allocation} />
+      </div>
+
+      {/* セクター分析セクション */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectorPerformanceChart assets={portfolio.assets} usdJpy={usdJpy} />
+        <RebalanceWidget assets={portfolio.assets} usdJpy={usdJpy} />
       </div>
     </div>
   );

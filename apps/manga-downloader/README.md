@@ -17,26 +17,21 @@
 
 ## 必要環境
 
-- Python 3.7以上
-- Playwright（1.40.0以上）
-- その他の依存パッケージは`requirements.txt`に記載
+- **Playwright ブラウザ**: `playwright install chromium`
+- その他の依存パッケージは`pyproject.toml`に記載
 
 ## インストール
 
-1. リポジトリをクローン（またはファイルをダウンロード）:
+1. リポジリをクローン（またはファイルをダウンロード）:
 ```bash
 git clone <repository-url>
 cd manga_downloader
 ```
 
-2. 依存パッケージをインストール:
+2. uvを使用して依存パッケージとツールをインストール・同期:
 ```bash
-pip install -r requirements.txt
-```
-
-3. Playwrightのブラウザをインストール:
-```bash
-playwright install chromium
+uv sync
+uv run playwright install chromium
 ```
 
 ## 使用方法
@@ -45,20 +40,20 @@ playwright install chromium
 
 単一のURLを処理:
 ```bash
-python download_images_as_cbz.py https://example.com/manga/episode-1
+uv run python download_images_as_cbz.py https://example.com/manga/episode-1
 ```
 
 ### URLを対話的に入力
 
 引数なしで実行すると、対話的にURLを入力できます:
 ```bash
-python download_images_as_cbz.py
+uv run python download_images_as_cbz.py
 ```
 
 ### 複数URLを一度に処理
 
 ```bash
-python download_images_as_cbz.py https://example.com/manga/ep1 https://example.com/manga/ep2
+uv run python download_images_as_cbz.py https://example.com/manga/ep1 https://example.com/manga/ep2
 ```
 
 ### URLリストファイルから一括処理
@@ -72,7 +67,7 @@ https://example.com/manga/episode-3
 
 実行:
 ```bash
-python download_images_as_cbz.py --file urls.txt
+uv run python download_images_as_cbz.py --file urls.txt
 ```
 
 ### オプション
@@ -88,17 +83,17 @@ python download_images_as_cbz.py --file urls.txt
 
 カスタムファイル名を指定:
 ```bash
-python download_images_as_cbz.py https://example.com/manga/ep1 --name "第1話"
+uv run python download_images_as_cbz.py https://example.com/manga/ep1 --name "第1話"
 ```
 
 保存先を変更:
 ```bash
-python download_images_as_cbz.py https://example.com/manga/ep1 --output-dir "./downloads"
+uv run python download_images_as_cbz.py https://example.com/manga/ep1 --output-dir "./downloads"
 ```
 
 一時フォルダを保持:
 ```bash
-python download_images_as_cbz.py https://example.com/manga/ep1 --keep-temp
+uv run python download_images_as_cbz.py https://example.com/manga/ep1 --keep-temp
 ```
 
 ## 出力形式
@@ -113,15 +108,15 @@ python download_images_as_cbz.py https://example.com/manga/ep1 --keep-temp
 
 依存パッケージが不足しています:
 ```bash
-pip install playwright tqdm
-playwright install chromium
+uv sync
+uv run playwright install chromium
 ```
 
 ### エラー: "保存先ディレクトリが作成できません"
 
 デフォルトの保存先（`H:\DL\MangaDownloads`）が存在しない場合、`--output-dir`オプションで保存先を指定してください:
 ```bash
-python download_images_as_cbz.py <URL> --output-dir "./downloads"
+uv run python download_images_as_cbz.py <URL> --output-dir "./downloads"
 ```
 
 ### ページ要素が見つからない
@@ -157,21 +152,20 @@ python download_images_as_cbz.py <URL> --output-dir "./downloads"
 > Monorepo全体のアーキテクチャについては [ARCHITECTURE.md](file:///c:/Users/koume/Downloads/code/ARCHITECTURE.md) を参照してください。
 
 ## コード品質管理
-
-このプロジェクトではRuffを使用してコード品質を管理しています：
+このプロジェクトではRuffを使用してコード品質を管理しています。TurboRepoパイプラインに統合されています。
 
 ```bash
-# Lintチェック
-ruff check .
+# ルートディレクトリから実行
 
-# 自動修正
-ruff check . --fix
+# Lint (Ruff)
+pnpm lint --filter=manga-downloader
 
-# フォーマット
-ruff format .
+# 自動修正 (ディレクトリ内で実行)
+cd apps/manga-downloader
+uv run ruff check . --fix
 ```
 
-**現在の状態**: ✅ 65件 → 19件（自動修正済み）
+**現在の状態**: ✅ TurboRepoパイプラインに統合済み
 
 ### 設定ファイル
 
@@ -184,6 +178,10 @@ ruff format .
 
 このプロジェクトは個人使用を目的としています。商用利用は禁止されています。
 
+### 🌍 公開リポジトリ
+本プロジェクトの公開版は以下で管理されています（機密情報を除外済み）:
+[https://github.com/dcrown99/creative-Antigravity](https://github.com/dcrown99/creative-Antigravity)
+
 ## その他のファイル
 
 - **メインスクリプト**:
@@ -195,7 +193,7 @@ ruff format .
   
 - **設定・データ**:
   - `urls.txt`: URLリストのサンプルファイル
-  - `requirements.txt`: Python依存パッケージリスト
+  - `pyproject.toml`: Python依存パッケージリストと設定
   
 - **ドキュメント**:
   - `使い方.md`: 詳細な使用方法ガイド

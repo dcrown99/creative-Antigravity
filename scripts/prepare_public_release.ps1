@@ -3,7 +3,7 @@
     Prepares a public release of the repository.
 .DESCRIPTION
     Copies the current repository to a target directory, excluding sensitive files and directories.
-    Sanitizes configuration files (docker-compose.yml, env files) to remove secrets and local paths.
+    Sanitizes configuration files (docker-compose.*.yml, env files) to remove secrets and local paths.
 .PARAMETER DestinationPath
     The path where the public repository will be created.
 .EXAMPLE
@@ -59,24 +59,30 @@ if (-not (Test-Path (Join-Path $DestinationPath "package.json"))) {
 
 Write-Host "✅ Files copied." -ForegroundColor Green
 
-# 2. Sanitize docker-compose.yml
-Write-Host "🧹 Sanitizing docker-compose.yml..." -ForegroundColor Cyan
-$DockerComposePath = Join-Path $DestinationPath "docker-compose.yml"
+# 2. Sanitize Docker Compose Files
+Write-Host "🧹 Sanitizing Docker Compose files..." -ForegroundColor Cyan
 
-if (Test-Path $DockerComposePath) {
-    $Content = Get-Content $DockerComposePath -Raw
-    
-    # Replace local drive paths
-    $Content = $Content -replace "G:/マイドライブ/.*?:", "./data/mock_drive:"
-    
-    # Ensure API keys are placeholders (if hardcoded, though they should be env vars)
-    # Just in case, we can add a comment
-    $Content = "# NOTE: This file has been sanitized for public release.`n" + $Content
-    
-    Set-Content -Path $DockerComposePath -Value $Content
-    Write-Host "  - docker-compose.yml sanitized." -ForegroundColor Gray
-} else {
-    Write-Warning "docker-compose.yml not found at $DockerComposePath"
+$ComposeFiles = @("docker-compose.base.yml", "docker-compose.dev.yml", "docker-compose.prod.yml")
+
+foreach ($File in $ComposeFiles) {
+    $DockerComposePath = Join-Path $DestinationPath $File
+
+    if (Test-Path $DockerComposePath) {
+        $Content = Get-Content $DockerComposePath -Raw
+        
+        # Replace local drive paths
+        $Content = $Content -replace "H:/.*?/.*?:", "./data/mock_drive:"
+        
+        # Ensure API keys are placeholders (if hardcoded, though they should be env vars)
+        # Just in case, we can add a comment
+        $Content = "# NOTE: This file has been sanitized for public release.`n" + $Content
+        
+        Set-Content -Path $DockerComposePath -Value $Content
+        Write-Host "  - $File sanitized." -ForegroundColor Gray
+    }
+    else {
+        Write-Warning "$File not found at $DockerComposePath"
+    }
 }
 
 # 3. Create Dummy .env files

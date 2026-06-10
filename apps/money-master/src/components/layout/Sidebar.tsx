@@ -11,8 +11,9 @@ import {
   FileText,
   DollarSign,
   Upload,
+
 } from "lucide-react";
-import { Button, ModeToggle } from "@repo/ui";
+import { ModeToggle } from "@repo/ui";
 
 const routes = [
   {
@@ -20,6 +21,7 @@ const routes = [
     icon: LayoutDashboard,
     href: "/",
   },
+
   {
     label: "資産一覧",
     icon: Wallet,
@@ -56,7 +58,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="space-y-4 py-4 flex flex-col h-full bg-background border-r">
+    <div className="space-y-4 py-4 flex flex-col h-full bg-background border-r w-64 hidden md:flex shrink-0">
       <div className="px-3 py-2 flex-1">
         <Link href="/" className="flex items-center pl-3 mb-14">
           <h1 className="text-2xl font-bold">Money Master</h1>

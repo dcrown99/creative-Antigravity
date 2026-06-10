@@ -1,0 +1,22 @@
+version: "1.0"
+containers:
+  total: 13
+  note: "auto-clipper-worker はポート公開なしのバックグラウンドワーカー"
+
+services:
+  frontend:
+    - { name: money-master, port: 3001, desc: "資産管理DB (Core)" }
+    - { name: my-kindle, port: 3002, desc: "マンガリーダー" }
+    - { name: auto-clipper-web, port: 3003, desc: "動画編集UI" }
+    - { name: ai-talker, port: 3004, desc: "英会話学習 (3D Avatar)" }
+    - { name: news-reader, port: 3005, desc: "AIニュースリーダー" }
+  backend:
+    - { name: auto-clipper-api, port: 8000, desc: "動画AIバックエンド" }
+    - { name: market-watcher, port: 8001, desc: "市場分析AIエージェント" }
+    - { name: quant-brain, port: 8002, desc: "金融分析エンジン" }
+    - { name: auto-clipper-worker, port: null, desc: "バックグラウンドワーカー" }
+  infra:
+    - { name: redis, port: 6379, desc: "メッセージブローカー" }
+    - { name: voicevox, port: 50021, desc: "音声合成エンジン" }
+    - { name: timescaledb, port: 5432, desc: "時系列DB" }
+    - { name: dozzle, port: 8888, desc: "ログビューアー" }

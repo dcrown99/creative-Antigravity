@@ -1,5 +1,4 @@
 import sqlite3
-from datetime import datetime
 import os
 import json
 import redis
@@ -165,12 +164,12 @@ def get_job(job_id: str):
         if job_dict.get('candidates'):
             try:
                 job_dict['candidates'] = json.loads(job_dict['candidates'])
-            except:
+            except Exception:
                 job_dict['candidates'] = []
         if job_dict.get('transcript'):
             try:
                 job_dict['transcript'] = json.loads(job_dict['transcript'])
-            except:
+            except Exception:
                 job_dict['transcript'] = []
         return job_dict
         

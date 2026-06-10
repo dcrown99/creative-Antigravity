@@ -1,4 +1,5 @@
-import { getPortfolioWithPrices, getMonthlyTransactionSummary, getRecentTransactions, getAssetHistory, recordDailyHistory } from "@/lib/actions";
+// Link removed - not currently used
+import { getPortfolioWithPrices, getMonthlyTransactionSummary, getRecentTransactions, getAssetHistory } from "@/lib/actions";
 import { calculateTotalAssets } from "@/lib/portfolio-logic";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 
@@ -10,15 +11,12 @@ export default async function DashboardPage() {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
 
-    // recordDailyHistory を Promise.all に含める
     const [
-        _,
         { portfolio, usdJpy },
         monthlyTransactions,
         recentTransactions,
         assetHistory
     ] = await Promise.all([
-        recordDailyHistory(),
         getPortfolioWithPrices(),
         getMonthlyTransactionSummary(currentYear, currentMonth),
         getRecentTransactions(5),
@@ -29,13 +27,23 @@ export default async function DashboardPage() {
     const totalValue = calculateTotalAssets(portfolio.assets, usdJpy);
 
     return (
-        <DashboardClient
-            portfolio={portfolio}
-            monthlyTransactions={monthlyTransactions}
-            recentTransactions={recentTransactions}
-            totalValue={totalValue}
-            usdJpy={usdJpy}
-            assetHistory={assetHistory}
-        />
+        <main className="min-h-screen bg-slate-950 p-8 text-slate-200">
+            {/* Header */}
+            <header className="mb-12 flex justify-between items-center">
+                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">
+                    GOD MODE DASHBOARD
+                </h1>
+            </header>
+
+            {/* Existing Dashboard Client */}
+            <DashboardClient
+                portfolio={portfolio}
+                monthlyTransactions={monthlyTransactions}
+                recentTransactions={recentTransactions}
+                totalValue={totalValue}
+                usdJpy={usdJpy}
+                assetHistory={assetHistory}
+            />
+        </main>
     );
 }

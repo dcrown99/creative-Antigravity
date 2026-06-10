@@ -6,12 +6,23 @@
 secrets.json
 rclone/auth.ps1
 
+# --- Temporary results & Coverage ---
+results.txt
+search_results.txt
+granular_results.txt
+.coverage
+coverage.xml
+apps/auto-clipper-api/.coverage
+apps/auto-clipper-api/coverage.xml
+
 # --- Database ---
 *.db
 *.sqlite
 *.sqlite3
 *.db-journal
+data/
 apps/money-master/data/
+
 apps/money-master/prisma/dev.db
 apps/money-master/prisma/migrations/migration_lock.toml
 
@@ -46,6 +57,8 @@ test_thumbnail.jpg
 
 # --- Python & Venv ---
 .venv/
+**/venv/
+
 __pycache__/
 *.py[cod]
 
@@ -68,6 +81,14 @@ Thumbs.db
 
 # --- Dependencies ---
 node_modules
+**/.next/
+
+# --- MT5 Compiled Binaries ---
+*.ex5
+mt5/compile.log
 
 # Archive
 _archive/
+
+# Downloads
+downloads/

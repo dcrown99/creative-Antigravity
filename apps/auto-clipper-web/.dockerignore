@@ -1,4 +1,22 @@
+# Node/Next.js固有
 node_modules
 .next
-.git
+.turbo
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# 開発ファイル
+src
+e2e
+test-results
 .env
+.DS_Store
+
+# Git/VCS
+.git
+.gitignore
+
+# ビルド成果物 (ビルドステージで生成されるため無視)
+dist
+out

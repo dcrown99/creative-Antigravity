@@ -1,4 +1,9 @@
 $ErrorActionPreference = "Stop"
+
+Write-Warning "⚠️  DEPRECATED: Google Drive integration is no longer used."
+Write-Warning "   Please use External Drive (H:) mount instead."
+exit
+
 $ConfigDir = "$PWD\config\rclone"
 if (-not (Test-Path $ConfigDir)) { New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null }
 
@@ -31,7 +36,8 @@ if (Test-Path "$PWD\gdrive_mount") {
     if ($files) {
         Write-Host "🎉 Drive Mounted! Files detected:" -ForegroundColor Green
         $files | Format-Table Name
-    } else {
+    }
+    else {
         Write-Warning "⚠️ Mount folder is empty. Check your Drive content."
     }
 }

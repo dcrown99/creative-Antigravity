@@ -9,7 +9,7 @@ import {
     CardHeader,
     CardTitle
 } from "@repo/ui";
-import { Button, Badge } from "@repo/ui";
+import { Button } from "@repo/ui";
 import { LibraryItem } from '@/types';
 
 interface BookCardProps {

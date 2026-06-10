@@ -180,7 +180,7 @@ function CalendarDayButton({
   day,
   modifiers,
   ...props
-}: any) {
+}: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   const defaultClassNames = getDefaultClassNames()
 
   const ref = React.useRef<HTMLButtonElement>(null)

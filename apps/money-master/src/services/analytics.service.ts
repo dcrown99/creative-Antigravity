@@ -1,7 +1,7 @@
-import { Asset, Portfolio, AnalysisLog } from "@/types";
+import { Asset, AnalysisLog } from "@/types";
 import * as AssetService from "./asset.service";
 import { prisma } from "@/lib/prisma";
-import { Calculator, MoneyValue } from "@/lib/calculator";
+import { Calculator } from "@/lib/calculator";
 import { Decimal } from "@prisma/client/runtime/library";
 
 export async function getLatestAnalysis(): Promise<AnalysisLog | null> {
@@ -21,7 +21,7 @@ export async function getLatestAnalysis(): Promise<AnalysisLog | null> {
                 parsedSources = [];
             }
         } else {
-            parsedSources = log.sources;
+            parsedSources = log.sources ?? [];
         }
 
         return {
@@ -109,16 +109,29 @@ export async function recordDailyHistory(force: boolean = false): Promise<void> 
 
 export async function getAssetHistory(days: number = 30): Promise<HistoryEntry[]> {
     try {
+        // Calculate the start date based on the requested days
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        const startDateStr = startDate.toISOString().split('T')[0];
+
         const history = await prisma.historyEntry.findMany({
+            where: {
+                date: {
+                    gte: startDateStr,
+                },
+            },
             orderBy: { date: 'asc' },
-            take: days,
         });
 
         if (history.length === 0) {
             await recordDailyHistory();
             const newHistory = await prisma.historyEntry.findMany({
+                where: {
+                    date: {
+                        gte: startDateStr,
+                    },
+                },
                 orderBy: { date: 'asc' },
-                take: days,
             });
             return parseHistoryEntries(newHistory);
         }
@@ -131,6 +144,7 @@ export async function getAssetHistory(days: number = 30): Promise<HistoryEntry[]
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseHistoryEntries(entries: any[]): HistoryEntry[] {
     return entries.map(entry => {
         let data = undefined;

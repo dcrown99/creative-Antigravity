@@ -24,9 +24,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev',
+    command: process.env.CI
+      ? 'node .next/standalone/apps/money-master/server.js'
+      : 'pnpm dev',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: process.env.CI ? 180 * 1000 : 120 * 1000,
+    env: {
+      PORT: '3001',
+    },
   },
 });

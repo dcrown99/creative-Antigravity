@@ -1,5 +1,4 @@
 import traceback
-import os
 from typing import List, Dict
 from .video_engine import VideoEngine
 

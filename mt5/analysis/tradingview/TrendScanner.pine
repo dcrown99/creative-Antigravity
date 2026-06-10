@@ -1,0 +1,255 @@
+//@version=5
+indicator("Trend Scanner (ATR Pullback)", overlay=true)
+
+// =================================
+// Parameters (Optimized for BTC 1H)
+// =================================
+adxLen = input.int(14, "ADX / DI Length")
+adxSmooth = input.int(14, "ADX Smoothing Length")
+adxTh = input.int(20, "ADX Threshold")
+atrLen = input.int(14, "ATR Length")
+adxSlopeBars = input.int(3, "ADX Slope Bars", minval=1, maxval=10, tooltip="ADXが何本前より上昇中かを確認。1=直前比、3=安定検出(推奨)")
+
+lookback = input.int(10, "Swing Lookback (Bars)")
+minPbAtr = input.float(1.0, "Min Pullback ATR")
+maxPbAtr = input.float(3.0, "Max Pullback ATR")
+slAtrMult = input.float(3.0, "Stop Loss ATR Multiplier")
+trailAtrMult = input.float(2.5, "Trail Stop ATR Multiplier")
+
+// --- Volatility Squeeze Filter ---
+useSqueezeFilter = input.bool(true, "Use Squeeze Filter (BB in KC)")
+squeezeLength = input.int(20, "Squeeze BB/KC Length")
+
+// --- Daily Trend Filter ---
+useDailyFilter = input.bool(true, "Use Daily SMA Filter")
+showSmaLines = input.bool(false, "Show SMA Lines on Chart")
+smaFastLen = input.int(50, "SMA Fast Length")
+smaSlowLen = input.int(200, "SMA Slow Length")
+
+// =================================
+// Indicators
+// =================================
+[plusDI, minusDI, adxValue] = ta.dmi(adxLen, adxSmooth)
+atrValue = ta.rma(ta.tr(true), atrLen) // rma is Wilder's EMA equivalent
+
+// =================================
+// Trend & Direction
+// =================================
+adxRising = adxValue > adxValue[adxSlopeBars]  // ADXが上昇中 = トレンドが加速中
+isTrend = adxValue >= adxTh and adxRising       // 強度 + 加速の両方を確認
+isLong = plusDI > minusDI
+isShort = minusDI > plusDI
+isFlat = not isLong and not isShort  // DI equal → no directional bias
+
+// SMA for daily trend filter (computed in Daily context)
+// gaps_off (default) で週明けなどのna欠落を防ぐ
+smaFast = request.security(syminfo.tickerid, "D", ta.sma(close, smaFastLen))
+smaSlow = request.security(syminfo.tickerid, "D", ta.sma(close, smaSlowLen))
+
+dailyBullish = smaFast > smaSlow
+dailyBearish = smaFast < smaSlow
+
+// =================================
+// Squeeze Filter (Bollinger Bands vs Keltner Channels)
+// =================================
+bbDev = 2.0 * ta.stdev(close, squeezeLength)
+kcDev = 1.5 * ta.sma(ta.tr(true), squeezeLength)
+isSqueezeOn = bbDev < kcDev
+
+// =================================
+// Pullback Logic
+// =================================
+swingH = ta.highest(high, lookback)
+swingL = ta.lowest(low, lookback)
+
+pullbackLong = swingH - close
+pullbackShort = close - swingL
+
+distAtrLong = atrValue > 0 ? pullbackLong / atrValue : 0.0
+distAtrShort = atrValue > 0 ? pullbackShort / atrValue : 0.0
+
+bool isSetupLong = false
+bool isSetupShort = false
+bool isWatchLong = false
+bool isWatchShort = false
+
+// Daily filter: only allow SETUP in the daily trend direction
+bool longAllowed = not useDailyFilter or dailyBullish
+bool shortAllowed = not useDailyFilter or dailyBearish
+
+// Volatility Filter
+bool volAllowed = not useSqueezeFilter or not isSqueezeOn
+
+if isTrend and isLong
+    if distAtrLong >= minPbAtr and distAtrLong <= maxPbAtr
+        isSetupLong := longAllowed and volAllowed  // blocked if daily says SHORT or Squeeze is ON
+        isWatchLong := not isSetupLong  // show WATCH if conditions exist but blocked by filters
+    else if distAtrLong < minPbAtr
+        isWatchLong := true
+
+if isTrend and isShort
+    if distAtrShort >= minPbAtr and distAtrShort <= maxPbAtr
+        isSetupShort := shortAllowed and volAllowed  // blocked if daily says LONG or Squeeze is ON
+        isWatchShort := not isSetupShort  // show WATCH if conditions exist but blocked by filters
+    else if distAtrShort < minPbAtr
+        isWatchShort := true
+
+// Setup start detection (first bar of SETUP)
+bool setupLongStart = isSetupLong and not isSetupLong[1]
+bool setupShortStart = isSetupShort and not isSetupShort[1]
+
+// =================================
+// Trailing Stop Logic
+// =================================
+var float trailPrice = na
+var bool trailIsLong = true
+var bool trailActive = false  // true = trail already initialized in this cycle
+
+// Current cycle state: are we in any SETUP or WATCH?
+bool inCycle = isSetupLong or isSetupShort or isWatchLong or isWatchShort
+
+// Reset cycle when completely out of SETUP/WATCH
+if not inCycle
+    trailActive := false
+
+// Reset when direction flips
+if not na(trailPrice) and trailIsLong and isShort
+    trailPrice := na
+if not na(trailPrice) and not trailIsLong and isLong
+    trailPrice := na
+
+// Reset when trend ends
+if not na(trailPrice) and not isTrend
+    trailPrice := na
+
+// Initialize trail: only ONCE per cycle, on the first SETUP bar
+if not trailActive and isSetupLong
+    trailPrice := close - atrValue * trailAtrMult
+    trailIsLong := true
+    trailActive := true
+else if not trailActive and isSetupShort
+    trailPrice := close + atrValue * trailAtrMult
+    trailIsLong := false
+    trailActive := true
+
+// Ratchet (move only in favorable direction)
+if not na(trailPrice)
+    if trailIsLong
+        newTrail = close - atrValue * trailAtrMult
+        trailPrice := math.max(trailPrice, newTrail)
+    else
+        newTrail = close + atrValue * trailAtrMult
+        trailPrice := math.min(trailPrice, newTrail)
+
+// Hit detection
+bool trailHitLong = not na(trailPrice) and trailIsLong and close <= trailPrice
+bool trailHitShort = not na(trailPrice) and not trailIsLong and close >= trailPrice
+
+if trailHitLong or trailHitShort
+    trailPrice := na
+    // trailActive stays true → no re-init until cycle fully resets
+
+// =================================
+// Drawings & Visuals
+// =================================
+// Background colors for Setup and Watch
+bgcolor(isSetupLong ? color.new(color.green, 85) : isSetupShort ? color.new(color.red, 85) : (isWatchLong or isWatchShort) ? color.new(color.yellow, 90) : na, title="State Background")
+
+// Entry Zones
+zoneTopLong = swingH - (atrValue * minPbAtr)
+zoneBotLong = swingH - (atrValue * maxPbAtr)
+zoneBotShort = swingL + (atrValue * minPbAtr)
+zoneTopShort = swingL + (atrValue * maxPbAtr)
+
+plot(isTrend and isLong ? zoneTopLong : na, color=color.new(color.green, 20), style=plot.style_linebr, linewidth=1, title="LONG Zone Top")
+plot(isTrend and isLong ? zoneBotLong : na, color=color.new(color.green, 20), style=plot.style_linebr, linewidth=1, title="LONG Zone Bot")
+
+plot(isTrend and isShort ? zoneBotShort : na, color=color.new(color.red, 20), style=plot.style_linebr, linewidth=1, title="SHORT Zone Bot")
+plot(isTrend and isShort ? zoneTopShort : na, color=color.new(color.red, 20), style=plot.style_linebr, linewidth=1, title="SHORT Zone Top")
+
+// Stop Loss Marker (fixed at SETUP entry, not recalculated every bar)
+var float slFixed = na
+
+if setupLongStart
+    slFixed := close - (atrValue * slAtrMult)
+else if setupShortStart
+    slFixed := close + (atrValue * slAtrMult)
+// トレイルヒット時のみクリア: ゾーン境界ウィグル時にSLが消えるバグを修正
+else if trailHitLong or trailHitShort
+    slFixed := na
+
+plot(isSetupLong and not na(slFixed) ? slFixed : na, color=color.red, style=plot.style_cross, linewidth=2, title="LONG SL")
+plot(isSetupShort and not na(slFixed) ? slFixed : na, color=color.red, style=plot.style_cross, linewidth=2, title="SHORT SL")
+
+// Trailing Stop Line
+plot(trailPrice, color=color.new(color.orange, 0), style=plot.style_circles, linewidth=2, title="Trail Stop")
+
+// SMA Lines
+plot(showSmaLines ? smaFast : na, color=color.new(color.aqua, 30), linewidth=1, title="SMA Fast")
+plot(showSmaLines ? smaSlow : na, color=color.new(color.purple, 30), linewidth=1, title="SMA Slow")
+
+// Trail Hit Marker
+plotshape(trailHitLong, style=shape.xcross, location=location.belowbar, color=color.orange, size=size.small, title="Trail Hit Long")
+plotshape(trailHitShort, style=shape.xcross, location=location.abovebar, color=color.orange, size=size.small, title="Trail Hit Short")
+
+// Setup Start Signal (first bar only)
+plotshape(setupLongStart, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="LONG Setup Start")
+plotshape(setupShortStart, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="SHORT Setup Start")
+
+// =================================
+// Alerts
+// =================================
+// 状態継続中に毎バー発火しないよう Start барでのみアラート
+alertcondition(setupLongStart, title="🚀 LONG Setup", message="Trend Scanner: LONG Setup START on {{ticker}}")
+alertcondition(setupShortStart, title="🚀 SHORT Setup", message="Trend Scanner: SHORT Setup START on {{ticker}}")
+alertcondition(trailHitLong or trailHitShort, title="⚠️ Trail Stop Hit", message="Trend Scanner: Trail Stop hit on {{ticker}}")
+
+// =================================
+// Dashboard / Table
+// =================================
+var table panel = table.new(position.top_right, 2, 9, bgcolor=color.new(color.black, 80), border_width=1, border_color=color.gray)
+
+if barstate.islast
+    table.cell(panel, 0, 0, "Metric", text_color=color.gray, text_halign=text.align_left)
+    table.cell(panel, 1, 0, "Value", text_color=color.gray, text_halign=text.align_right)
+    
+    // ADX
+    table.cell(panel, 0, 1, "ADX(14)", text_color=color.white, text_halign=text.align_left)
+    table.cell(panel, 1, 1, str.tostring(adxValue, "#.1") + (isTrend ? " ✅" : " ❌"), text_color=isTrend ? color.green : color.gray, text_halign=text.align_right)
+    
+    // Direction
+    table.cell(panel, 0, 2, "Direction", text_color=color.white, text_halign=text.align_left)
+    dirStr = isLong ? "LONG" : isShort ? "SHORT" : "FLAT"
+    dirCol = isLong ? color.green : isShort ? color.red : color.gray
+    table.cell(panel, 1, 2, dirStr, text_color=dirCol, text_halign=text.align_right)
+    
+    // Status
+    table.cell(panel, 0, 3, "Status", text_color=color.white, text_halign=text.align_left)
+    statusStr = (isSetupLong or isSetupShort) ? "🚀 SETUP" : (isWatchLong or isWatchShort) ? "👀 WATCH" : isTrend ? "📈 TREND" : "💤 RANGE"
+    statusCol = (isSetupLong or isSetupShort) ? color.lime : (isWatchLong or isWatchShort) ? color.yellow : isTrend ? color.aqua : color.gray
+    table.cell(panel, 1, 3, statusStr, text_color=statusCol, text_halign=text.align_right)
+    
+    // Pullback Distance
+    table.cell(panel, 0, 4, "Dist ATR", text_color=color.white, text_halign=text.align_left)
+    distStr = isLong ? str.tostring(distAtrLong, "#.1") : isShort ? str.tostring(distAtrShort, "#.1") : "-"
+    table.cell(panel, 1, 4, distStr + " / " + str.tostring(maxPbAtr, "#.1"), text_color=color.white, text_halign=text.align_right)
+
+    // Stop Loss
+    table.cell(panel, 0, 5, "SL Price", text_color=color.white, text_halign=text.align_left)
+    slStr = not na(slFixed) ? str.tostring(slFixed, format.mintick) : "-"
+    table.cell(panel, 1, 5, slStr, text_color=color.red, text_halign=text.align_right)
+
+    // Trail Stop
+    table.cell(panel, 0, 6, "Trail Stop", text_color=color.white, text_halign=text.align_left)
+    trailStr = not na(trailPrice) ? str.tostring(trailPrice, format.mintick) : "-"
+    table.cell(panel, 1, 6, trailStr, text_color=color.orange, text_halign=text.align_right)
+
+    // Daily Bias (SMA Filter)
+    table.cell(panel, 0, 7, "D.Bias", text_color=color.white, text_halign=text.align_left)
+    biasStr = not useDailyFilter ? "OFF" : dailyBullish ? "BULL" : dailyBearish ? "BEAR" : "FLAT"
+    biasCol = not useDailyFilter ? color.gray : dailyBullish ? color.green : dailyBearish ? color.red : color.gray
+    table.cell(panel, 1, 7, biasStr, text_color=biasCol, text_halign=text.align_right)
+
+    // ATR Value
+    table.cell(panel, 0, 8, "ATR(" + str.tostring(atrLen) + ")", text_color=color.white, text_halign=text.align_left)
+    table.cell(panel, 1, 8, str.tostring(atrValue, format.mintick), text_color=color.aqua, text_halign=text.align_right)

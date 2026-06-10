@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { Portfolio } from "@/types";
 import { getPortfolio, updateAssetJson, deleteAsset as deleteAssetAction } from "@/lib/actions";
 
@@ -8,6 +8,7 @@ interface AssetsContextType {
     assets: Portfolio;
     setAssets: (assets: Portfolio) => void;
     refreshAssets: () => Promise<void>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateAsset: (id: string, data: any) => Promise<void>; // Using any for now to avoid import issues, ideally Asset
     deleteAsset: (id: string) => Promise<void>;
 }
@@ -22,6 +23,16 @@ export function AssetsProvider({
     initialData: Portfolio;
 }) {
     const [assets, setAssets] = useState<Portfolio>(initialData);
+    const lastInitialDataRef = useRef<string>(JSON.stringify(initialData));
+
+    // Sync with initialData when it changes (e.g., after router.refresh())
+    useEffect(() => {
+        const currentInitialDataStr = JSON.stringify(initialData);
+        if (currentInitialDataStr !== lastInitialDataRef.current) {
+            setAssets(initialData);
+            lastInitialDataRef.current = currentInitialDataStr;
+        }
+    }, [initialData]);
 
     const refreshAssets = useCallback(async () => {
         try {
@@ -32,6 +43,7 @@ export function AssetsProvider({
         }
     }, []);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateAsset = useCallback(async (id: string, data: any) => {
         try {
             await updateAssetJson(id, data);

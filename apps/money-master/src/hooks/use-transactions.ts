@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { getTransactions, saveTransactionsToServer } from "@/lib/actions";
 import { Transaction } from "@/types";
 
@@ -62,7 +61,7 @@ export function useTransactions() {
     const addTransaction = async (transaction: Omit<Transaction, "id" | "createdAt">) => {
         const newTransaction: Transaction = {
             ...transaction,
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             createdAt: Date.now(),
         };
         const updated = [newTransaction, ...transactions];
@@ -72,7 +71,7 @@ export function useTransactions() {
     const addTransactions = async (newTransactionsData: Omit<Transaction, "id" | "createdAt">[]) => {
         const newTransactions = newTransactionsData.map(t => ({
             ...t,
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             createdAt: Date.now(),
         }));
         const updated = [...newTransactions, ...transactions];

@@ -1,7 +1,7 @@
 import os
 import json
 import google.generativeai as genai
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Any
 
 def analyze_transcript_semantics(transcript: List[Dict], model_name: str = "gemini-2.5-flash") -> List[Dict[str, Any]]:
     """

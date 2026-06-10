@@ -1,13 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import * as AssetService from '@/services/asset.service';
 import * as TransactionService from '@/services/transaction.service';
 import * as SystemService from '@/services/system.service';
 import * as DividendService from '@/services/dividend.service';
 import * as AnalyticsService from '@/services/analytics.service';
-import { Asset, Transaction } from '@/types';
+import { Asset, Transaction, AnalysisLog } from '@/types';
+import { TransactionSchema, DividendSchema, parseTransactionFormData, parseDividendFormData } from '@/lib/validation';
 
 
 // ==========================================
@@ -38,9 +40,11 @@ export async function deleteAssetAction(id: string) {
     }
 }
 
-export async function addAssetAction(data: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function addAssetAction(data: Record<string, unknown>) {
     try {
-        await AssetService.addAsset(data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await AssetService.addAsset(data as any);
         revalidatePath('/assets');
         revalidatePath('/');
         return { success: true };
@@ -75,21 +79,16 @@ export async function getRecentTransactions(limit: number = 5) {
 
 export async function addTransactionAction(formData: FormData) {
     try {
-        const date = formData.get('date') as string;
-        const amount = Number(formData.get('amount'));
-        const type = formData.get('type') as 'income' | 'expense';
-        const category = formData.get('category') as string;
-        const description = formData.get('description') as string || undefined;
-        const assetId = formData.get('assetId') as string || undefined;
+        const rawData = parseTransactionFormData(formData);
 
-        await TransactionService.createTransaction({
-            date,
-            amount,
-            type,
-            category,
-            description,
-            assetId,
-        });
+        // Validate with Zod schema
+        const result = TransactionSchema.safeParse(rawData);
+        if (!result.success) {
+            const errorMessage = result.error.issues.map(i => i.message).join(', ');
+            return { success: false, error: errorMessage };
+        }
+
+        await TransactionService.createTransaction(result.data);
 
         revalidatePath('/transactions');
         revalidatePath('/');
@@ -102,15 +101,17 @@ export async function addTransactionAction(formData: FormData) {
 
 export async function updateTransactionAction(id: string, formData: FormData) {
     try {
-        const data: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: Record<string, unknown> = {};
         if (formData.has('date')) data.date = formData.get('date') as string;
         if (formData.has('amount')) data.amount = Number(formData.get('amount'));
-        if (formData.has('type')) data.type = formData.get('type');
-        if (formData.has('category')) data.category = formData.get('category');
-        if (formData.has('description')) data.description = formData.get('description');
-        if (formData.has('assetId')) data.assetId = formData.get('assetId');
+        if (formData.has('type')) data.type = formData.get('type') as string;
+        if (formData.has('category')) data.category = formData.get('category') as string;
+        if (formData.has('description')) data.description = formData.get('description') as string;
+        if (formData.has('assetId')) data.assetId = formData.get('assetId') as string;
 
-        await TransactionService.updateTransaction(id, data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await TransactionService.updateTransaction(id, data as any);
 
         revalidatePath('/transactions');
         revalidatePath('/');
@@ -170,13 +171,21 @@ export async function updateAsset(formData: FormData) {
 
     const data: Partial<Asset> = {};
     if (formData.has('name')) data.name = formData.get('name') as string;
-    if (formData.has('ticker')) data.ticker = formData.get('ticker') as string;
+    if (formData.has('ticker')) {
+        let ticker = formData.get('ticker') as string;
+        // Auto-append .T suffix for Japanese stock codes (4-digit numbers)
+        if (/^\d{4}$/.test(ticker)) {
+            ticker = ticker + '.T';
+        }
+        data.ticker = ticker;
+    }
     if (formData.has('quantity')) data.quantity = Number(formData.get('quantity'));
     if (formData.has('avgCost')) data.avgCost = Number(formData.get('avgCost'));
 
     await AssetService.updateAsset(id, data);
     revalidatePath('/assets');
     revalidatePath('/');
+    redirect('/assets');
 }
 
 export async function deleteAsset(id: string) {
@@ -237,23 +246,43 @@ export async function getDividends() {
 
 export async function addDividend(formData: FormData) {
     try {
-        const assetId = formData.get('assetId') as string;
-        const date = formData.get('date') as string;
-        const amount = Number(formData.get('amount'));
-        const currency = formData.get('currency') as 'JPY' | 'USD';
+        const rawData = parseDividendFormData(formData);
 
-        await DividendService.addDividend({
-            assetId,
-            date,
-            amount,
-            currency,
-        });
+        // Validate with Zod schema
+        const result = DividendSchema.safeParse(rawData);
+        if (!result.success) {
+            const errorMessage = result.error.issues.map(i => i.message).join(', ');
+            return { success: false, error: errorMessage };
+        }
+
+        await DividendService.addDividend(result.data);
         revalidatePath('/dividends');
         revalidatePath('/');
         return { success: true };
     } catch (error) {
         console.error('Failed to add dividend:', error);
         return { success: false, error: 'Failed to add dividend' };
+    }
+}
+
+export async function updateDividend(id: string, formData: FormData) {
+    try {
+        const date = formData.get('date') as string;
+        const amount = Number(formData.get('amount'));
+
+        // Currently only date and amount are editable for existing dividends
+        // Currency is fixed to JPY for now based on recent changes, but we keep the logic flexible if needed
+
+        await DividendService.updateDividend(id, {
+            date,
+            amount,
+        });
+        revalidatePath('/dividends');
+        revalidatePath('/');
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to update dividend:', error);
+        return { success: false, error: 'Failed to update dividend' };
     }
 }
 
@@ -290,7 +319,7 @@ export async function getAnalysisLogs() {
     return await SystemService.getAnalysisLogs();
 }
 
-export async function saveAnalysisLog(log: any) {
+export async function saveAnalysisLog(log: Omit<AnalysisLog, 'id'>) {
     const newLog = await SystemService.saveAnalysisLog(log);
     revalidatePath('/');
     return newLog;
@@ -359,6 +388,20 @@ export async function deleteCategoryRule(id: string) {
     }
 }
 
+export async function updateCategoryRule(id: string, pattern: string, category: string) {
+    try {
+        const rule = await prisma.categoryRule.update({
+            where: { id },
+            data: { pattern, category },
+        });
+        revalidatePath('/settings');
+        return { success: true, data: rule };
+    } catch (error) {
+        console.error("Failed to update rule:", error);
+        return { success: false, error: "ルールの更新に失敗しました" };
+    }
+}
+
 export async function getUniqueCategories() {
     try {
         const categories = await prisma.transaction.groupBy({
@@ -375,7 +418,7 @@ export async function getUniqueCategories() {
 }
 
 import fs from 'fs/promises';
-import path from 'path';
+import _path from 'path';
 
 export async function fetchLatestAnalysisAction() {
     return await AnalyticsService.getLatestAnalysis();
@@ -384,12 +427,12 @@ export async function fetchLatestAnalysisAction() {
 export async function triggerAnalysisAction() {
     try {
         // 1. Get current portfolio
-        const { portfolio, usdJpy } = await AssetService.getPortfolioWithPrices();
+        const { portfolio } = await AssetService.getPortfolioWithPrices();
 
         // 2. Save to JSON file for market-watcher
         // Docker volume mount path: /app/apps/money-master/data/portfolio.json
-        const dataDir = path.join(process.cwd(), 'data');
-        const filePath = path.join(dataDir, 'portfolio.json');
+        const dataDir = _path.join(process.cwd(), 'data');
+        const filePath = _path.join(dataDir, 'portfolio.json');
 
         // Ensure directory exists
         try {

@@ -1,44 +1,68 @@
-# syntax=docker/dockerfile:1
+# =============================================================================
+# STAGE 1: base - 依存関係のインストール層 (キャッシュのキー)
+# =============================================================================
+FROM node:20-slim AS base
+# pnpmをグローバルにインストール
+RUN npm install -g pnpm
 
-# 1. Base Stage
-FROM node:20-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-RUN apk add --no-cache libc6-compat openssl
+# Monorepoのルートディレクトリが/appになるように調整
+WORKDIR /app
 
-# 2. Builder Stage
+# 1. Monorepoのルート依存関係ファイルをコピー (キャッシュヒット率最大化)
+COPY package.json pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+
+# 2. 共有パッケージとアプリ固有のファイルをコピー
+COPY packages /app/packages
+# アプリ固有の設定ファイルをコピー
+COPY apps/my-kindle/package.json apps/my-kindle/next.config.ts apps/my-kindle/tsconfig.json apps/my-kindle/
+COPY apps/my-kindle/app-config.json apps/my-kindle/
+COPY apps/my-kindle/public apps/my-kindle/public
+
+# 3. 依存関係のインストール (ロックファイルに変更がない限りキャッシュ再利用)
+RUN pnpm install --frozen-lockfile
+
+# =============================================================================
+# STAGE 2: dev - 開発環境層 (Hot Reload)
+# =============================================================================
+FROM base AS dev
+WORKDIR /app
+ENV NODE_ENV development
+# ソースコードはdocker-composeでマウントされる前提
+CMD ["pnpm", "--filter", "my-kindle", "dev"]
+
+# =============================================================================
+# STAGE 3: builder - アプリケーションのビルド層
+# =============================================================================
 FROM base AS builder
+
 WORKDIR /app
-RUN npm install -g turbo
-COPY . .
-# 修正: Monorepoのルートから実行されるため、スコープ解決を確実に
-# 注意: package.jsonのnameと一致させる必要があります。もしビルドが失敗する場合、ここを確認してください。
-RUN turbo prune --scope=@app/my-kindle --docker
 
-# 3. Installer Stage
-FROM base AS installer
-WORKDIR /app
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm-lock.yaml ./
-# 修正: ルートのロックファイルを使って依存解決
-RUN pnpm install --no-frozen-lockfile
+# 1. アプリケーションのソースコードをコピー
+COPY apps/my-kindle/src apps/my-kindle/src
+# publicはbaseでコピー済みだが、念のためここでも確認（baseから継承されているので不要だが、明示的に）
 
-COPY --from=builder /app/out/full/ .
-
-# 4. Runner Stage
-FROM base AS runner
-WORKDIR /app
-COPY --from=installer /app .
-WORKDIR /app/apps/my-kindle
-
-# データディレクトリの権限設定
-RUN mkdir -p data && chmod 777 data
-
-ENV NODE_ENV=development
+# 2. Next.jsアプリケーションのビルド (standaloneモードで最小構成を生成)
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV WATCHPACK_POLLING=true
+RUN pnpm --filter my-kindle run build
 
-EXPOSE 3000
+# =============================================================================
+# STAGE 4: runner - 実行環境層 (最小限のイメージ)
+# =============================================================================
+FROM node:20-slim AS runner
 
-CMD ["pnpm", "dev"]
+WORKDIR /app
+
+# 1. Next.jsのstandalone成果物、静的ファイルをコピー
+# standaloneモードはnext.config.jsをコピーする必要がある
+COPY --from=builder /app/apps/my-kindle/.next/standalone ./
+COPY --from=builder /app/apps/my-kindle/.next/static ./apps/my-kindle/.next/static
+COPY --from=builder /app/apps/my-kindle/public ./apps/my-kindle/public
+
+# 2. 環境変数をコピー
+ENV NODE_ENV production
+ENV NEXT_PUBLIC_PORT 3000
+COPY apps/my-kindle/app-config.json ./apps/my-kindle/
+
+# 実行コマンド
+CMD ["node", "apps/my-kindle/server.js"]

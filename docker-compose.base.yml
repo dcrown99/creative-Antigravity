@@ -1,0 +1,207 @@
+# Docker Compose Base Configuration
+# 環境非依存の共通サービス定義
+# Usage: docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up
+
+services:
+  # ------------------------------
+  # 1. Infrastructure Services
+  # ------------------------------
+  db:
+    image: timescale/timescaledb:latest-pg14
+    container_name: timescaledb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=antigravity
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+    container_name: voicevox
+    ports:
+      - "50021:50021"
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 2. Quant Brain (Market Analysis)
+  # ------------------------------
+  quant-brain:
+    build:
+      context: ./apps/quant-brain
+      dockerfile: Dockerfile
+    container_name: quant-brain
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./apps/quant-brain/config:/app/config  # 最適化パラメータ永続化
+    env_file:
+      - ./apps/quant-brain/.env
+    environment:
+      - DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1446138160160440473/VGaC99ZqxGnQkBL-XlVNggaaGPv5xKB5Wq8zkOHIyv4eJtHgu5ujU8S8n3-XDj6OabCU
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 2. Money Master (Core DB)
+  # ------------------------------
+  money-master:
+    build:
+      context: .
+      dockerfile: apps/money-master/Dockerfile
+    container_name: money-master
+    ports:
+      - "3001:3000"
+    env_file:
+      - ./apps/money-master/.env
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 3. Market Watcher (AI Analysis)
+  # ------------------------------
+  market-watcher:
+    build:
+      context: ./apps/market-watcher
+      dockerfile: Dockerfile
+    container_name: market-watcher
+    ports:
+      - "8001:8000"
+    env_file:
+      - ./apps/market-watcher/.env
+    depends_on:
+      - money-master
+      - voicevox
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 4. Auto Clipper (Video AI)
+  # ------------------------------
+  auto-clipper-api:
+    build:
+      context: ./apps/auto-clipper-api
+      dockerfile: Dockerfile
+    container_name: auto-clipper-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/auto-clipper-api/.env
+    networks:
+      - app-network
+    depends_on:
+      - redis
+
+  auto-clipper-worker:
+    build:
+      context: ./apps/auto-clipper-api
+      dockerfile: Dockerfile
+    container_name: auto-clipper-worker
+    command: celery -A celery_app worker --loglevel=info --pool=solo
+    env_file:
+      - ./apps/auto-clipper-api/.env
+    networks:
+      - app-network
+    depends_on:
+      - redis
+      - auto-clipper-api
+
+  auto-clipper-web:
+    build:
+      context: .
+      dockerfile: apps/auto-clipper-web/Dockerfile
+    container_name: auto-clipper-web
+    ports:
+      - "3003:3000"
+    env_file:
+      - ./apps/auto-clipper-web/.env
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 5. My Kindle (Manga Reader)
+  # ------------------------------
+  my-kindle:
+    build:
+      context: .
+      dockerfile: apps/my-kindle/Dockerfile
+    container_name: my-kindle
+    ports:
+      - "3002:3000"
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 6. AI Talker (English Tutor)
+  # ------------------------------
+  ai-talker:
+    build:
+      context: .
+      dockerfile: apps/ai-talker/Dockerfile
+      target: runner
+    container_name: ai-talker
+    ports:
+      - "3004:3000"
+    env_file:
+      - ./apps/ai-talker/.env.example
+    depends_on:
+      - voicevox
+    networks:
+      - app-network
+
+  # ------------------------------
+  # 8. News Reader (AI News)
+  # ------------------------------
+  news-reader:
+    container_name: news-reader
+    build:
+      context: .
+      dockerfile: apps/news-reader/Dockerfile
+      target: runner
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - redis
+    ports:
+      - "3005:3000"
+    tty: true
+
+  # ------------------------------
+  # 7. Observability Stack
+  # ------------------------------
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: log_viewer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8888:8080"
+    environment:
+      DOZZLE_LEVEL: info
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:

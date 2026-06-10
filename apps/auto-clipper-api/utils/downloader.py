@@ -4,7 +4,6 @@ import imageio_ffmpeg
 import re
 import sys
 import time
-from datetime import datetime
 
 # パス設定の解決
 try:
@@ -59,7 +58,7 @@ def refresh_cookies_file() -> bool:
                 print(f"✅ Successfully refreshed cookies from {browser}!")
                 return True
                 
-        except Exception as e:
+        except Exception:
             # ブラウザがインストールされていない、またはログインしていない場合など
             continue
 

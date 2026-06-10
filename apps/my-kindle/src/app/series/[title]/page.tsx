@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLibrary } from '@/hooks/use-library';
 import { BookCard } from '@/components/features/book-card';
 import { Button } from '@repo/ui';

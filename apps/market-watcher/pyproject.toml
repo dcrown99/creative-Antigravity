@@ -1,26 +1,20 @@
-[tool.ruff]
-# Ruff設定 - Market Watcher
-line-length = 88
-target-version = "py311"
-
-[tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "SIM", # flake8-simplify
+[project]
+name = "market-watcher"
+version = "0.1.0"
+description = "Market Watcher Service"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "redis>=5.0.0",
+    "ccxt>=4.1.0",
+    "orjson>=3.9.0",
+    "python-dotenv>=1.0.0",
+    "websockets>=11.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0"
 ]
-ignore = []
 
-fixable = ["ALL"]
-unfixable = []
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-line-ending = "auto"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

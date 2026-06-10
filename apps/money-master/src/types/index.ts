@@ -1,5 +1,5 @@
 export type AssetType = 'JP_STOCK' | 'US_STOCK' | 'TRUST' | 'ETF' | 'bank' | 'cash' | 'credit' | 'other';
-export type AccountType = 'TOKUTEI' | 'NISA_TSUMITATE' | 'NISA_GROWTH';
+export type AccountType = 'TOKUTEI' | 'NISA_TSUMITATE' | 'NISA_GROWTH' | 'IDECO';
 export type Currency = 'JPY' | 'USD';
 
 export interface Asset {
@@ -15,6 +15,7 @@ export interface Asset {
   dividendRate?: number | null;
   dividendYield?: number | null;
   nextDividendDate?: string | null;
+  dividendFrequency?: 'quarterly' | 'semiannual' | 'annual' | 'monthly' | null;
   sector?: string | null;
   manualPrice?: number | null;
   // For cash/bank assets
@@ -58,16 +59,18 @@ export interface Transaction {
   createdAt: number;
 }
 
-export interface AnalysisLog {
-  id: string;
-  date: string; // ISO format
-  title: string;
-  summary: string;
-  script: string;
-  sources: { title: string; link: string; }[];
-}
+
 
 export interface CategoryRule {
   pattern: string;
   category: string;
+}
+
+export interface AnalysisLog {
+  id: string;
+  date: string;
+  title: string;
+  summary: string;
+  script?: string | null;
+  sources?: string | null; // JSON string
 }

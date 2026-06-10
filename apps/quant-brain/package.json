@@ -1,0 +1,9 @@
+{
+    "name": "quant-brain",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "lint": "ruff check .",
+        "test": "pytest"
+    }
+}

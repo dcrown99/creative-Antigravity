@@ -63,7 +63,7 @@ export function DividendAssetSummary({ assets, usdJpy }: DividendAssetSummaryPro
                     try {
                         const date = new Date(asset.nextDividendDate);
                         dividendMonth = `${date.getMonth() + 1}月`;
-                    } catch (e) {
+                    } catch {
                         dividendMonth = '-';
                     }
                 }

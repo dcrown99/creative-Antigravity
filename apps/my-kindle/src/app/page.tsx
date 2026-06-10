@@ -161,16 +161,7 @@ export default function LibraryPage() {
                   style={{ height: 'calc(100vh - 200px)' }}
                   totalCount={books.length}
                   components={{
-                    List: forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ style, children, ...props }, ref) => (
-                      <div
-                        ref={ref}
-                        {...props}
-                        style={style}
-                        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20"
-                      >
-                        {children}
-                      </div>
-                    )),
+                    List: VirtuosoList,
                     Item: ({ children, ...props }) => (
                       <div {...props} className="h-full">
                         {children}
@@ -189,3 +180,15 @@ export default function LibraryPage() {
     </div >
   );
 }
+
+const VirtuosoList = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ style, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    {...props}
+    style={style}
+    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20"
+  >
+    {children}
+  </div>
+));
+VirtuosoList.displayName = 'VirtuosoList';
