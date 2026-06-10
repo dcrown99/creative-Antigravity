@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta
 
-DATA_FILE = r'c:\Users\koume\Downloads\code\data\USDJPY_M1.csv'
+DATA_FILE = 'data/USDJPY_M1.csv'
 SPREAD_PIPS = 0.4
 SL_PIPS = 20
 TP_PIPS = 40

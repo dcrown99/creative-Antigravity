@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import sys
 
-FILE_PATH = r"c:\Users\koume\Downloads\code\mt5\backtest_results\ReportTester-72377205.html"
+FILE_PATH = "mt5/backtest_results/ReportTester-72377205.html"
 
 # Universal Reader
 content = ""

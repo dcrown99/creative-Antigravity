@@ -41,6 +41,8 @@ pnpm-debug.log*
 *_output.txt
 *_debug.txt
 eslint_output.txt
+*_jest_out.txt
+*jest_out.txt
 
 # --- User Data & Temp ---
 urls.txt
